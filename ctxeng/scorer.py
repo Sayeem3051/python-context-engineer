@@ -1,11 +1,11 @@
 """Relevance scoring for source files relative to a query."""
 
 from __future__ import annotations
+
 import ast
 import re
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 
 def score_file(path: Path, content: str, query: str, root: Path) -> float:
@@ -41,7 +41,7 @@ def score_file(path: Path, content: str, query: str, root: Path) -> float:
     total_w = sum(weights)
     weights = [w / total_w for w in weights]
 
-    return min(1.0, sum(s * w for s, w in zip(scores, weights)))
+    return min(1.0, sum(s * w for s, w in zip(scores, weights, strict=False)))
 
 
 def _keyword_score(content: str, query: str) -> float:
@@ -97,9 +97,8 @@ def _ast_score(content: str, query: str) -> float:
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 symbols.append(alias.name.split(".")[0].lower())
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                symbols.append(node.module.split(".")[0].lower())
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            symbols.append(node.module.split(".")[0].lower())
 
     if not symbols or not query:
         return 0.3
@@ -110,7 +109,7 @@ def _ast_score(content: str, query: str) -> float:
     return min(1.0, len(overlap) / max(1, len(query_tokens)))
 
 
-def _git_recency_score(path: Path, root: Path) -> Optional[float]:
+def _git_recency_score(path: Path, root: Path) -> float | None:
     """
     Score based on how recently this file was modified in git.
     Returns None if git is unavailable.

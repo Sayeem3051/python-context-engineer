@@ -26,17 +26,18 @@ Example (OpenAI)::
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ctxeng.models import Context
 
 
 def ask_claude(
-    ctx: "Context",
+    ctx: Context,
     *,
-    api_key: Optional[str] = None,
-    model: Optional[str] = None,
+    api_key: str | None = None,
+    model: str | None = None,
     max_tokens: int = 4096,
     fmt: str = "xml",
 ) -> str:
@@ -76,10 +77,10 @@ def ask_claude(
 
 
 def ask_openai(
-    ctx: "Context",
+    ctx: Context,
     *,
-    api_key: Optional[str] = None,
-    model: Optional[str] = None,
+    api_key: str | None = None,
+    model: str | None = None,
     max_tokens: int = 4096,
     fmt: str = "markdown",
 ) -> str:
@@ -121,7 +122,7 @@ def ask_openai(
     return response.choices[0].message.content or ""
 
 
-def to_langchain_messages(ctx: "Context", fmt: str = "xml") -> list:
+def to_langchain_messages(ctx: Context, fmt: str = "xml") -> list:
     """
     Convert a Context to a list of LangChain message objects.
 

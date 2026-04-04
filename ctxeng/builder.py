@@ -1,11 +1,11 @@
 """Fluent builder API for constructing context step by step."""
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Union
 
-from ctxeng.models import Context, TokenBudget
+from pathlib import Path
+
 from ctxeng.core import ContextEngine
+from ctxeng.models import Context, TokenBudget
 
 
 class ContextBuilder:
@@ -28,10 +28,10 @@ class ContextBuilder:
         print(ctx.to_string("markdown"))
     """
 
-    def __init__(self, root: Union[str, Path] = ".") -> None:
+    def __init__(self, root: str | Path = ".") -> None:
         self._root = Path(root).resolve()
         self._model = "claude-sonnet-4"
-        self._budget: Optional[TokenBudget] = None
+        self._budget: TokenBudget | None = None
         self._include: list[str] = []
         self._exclude: list[str] = []
         self._explicit_files: list[Path] = []
@@ -41,48 +41,48 @@ class ContextBuilder:
         self._max_file_size_kb = 500
         self._use_git = True
 
-    def for_model(self, model: str) -> "ContextBuilder":
+    def for_model(self, model: str) -> ContextBuilder:
         """Set the target model (determines token budget)."""
         self._model = model
         return self
 
-    def with_budget(self, total: int, reserved_output: int = 2048) -> "ContextBuilder":
+    def with_budget(self, total: int, reserved_output: int = 2048) -> ContextBuilder:
         """Set an explicit token budget."""
         self._budget = TokenBudget(total=total, reserved_output=reserved_output)
         return self
 
-    def only(self, *patterns: str) -> "ContextBuilder":
+    def only(self, *patterns: str) -> ContextBuilder:
         """Only include files matching these glob patterns."""
         self._include.extend(patterns)
         return self
 
-    def exclude(self, *patterns: str) -> "ContextBuilder":
+    def exclude(self, *patterns: str) -> ContextBuilder:
         """Exclude files matching these glob patterns."""
         self._exclude.extend(patterns)
         return self
 
-    def include_files(self, *paths: Union[str, Path]) -> "ContextBuilder":
+    def include_files(self, *paths: str | Path) -> ContextBuilder:
         """Explicitly include specific files (bypasses auto-discovery)."""
         self._explicit_files.extend(Path(p) for p in paths)
         return self
 
-    def from_git_diff(self, base: str = "HEAD") -> "ContextBuilder":
+    def from_git_diff(self, base: str = "HEAD") -> ContextBuilder:
         """Only include files changed since `base`."""
         self._use_git_diff = True
         self._git_base = base
         return self
 
-    def with_system(self, prompt: str) -> "ContextBuilder":
+    def with_system(self, prompt: str) -> ContextBuilder:
         """Set a system prompt (counts against token budget)."""
         self._system = prompt
         return self
 
-    def max_file_size(self, kb: int) -> "ContextBuilder":
+    def max_file_size(self, kb: int) -> ContextBuilder:
         """Skip files larger than this size in KB."""
         self._max_file_size_kb = kb
         return self
 
-    def no_git(self) -> "ContextBuilder":
+    def no_git(self) -> ContextBuilder:
         """Disable git-based recency scoring."""
         self._use_git = False
         return self

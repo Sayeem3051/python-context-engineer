@@ -1,9 +1,9 @@
 """Data models for ctxeng."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -18,7 +18,7 @@ class TokenBudget:
         return self.total - self.reserved_output - self.reserved_system
 
     @classmethod
-    def for_model(cls, model: str) -> "TokenBudget":
+    def for_model(cls, model: str) -> TokenBudget:
         """Return a sensible budget for known models."""
         limits = {
             "claude-opus-4":     200_000,
@@ -76,7 +76,7 @@ class Context:
     system_prompt: str = ""
     query: str = ""
     total_tokens: int = 0
-    budget: Optional[TokenBudget] = None
+    budget: TokenBudget | None = None
     skipped_files: list[ContextFile] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
 

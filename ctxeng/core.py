@@ -1,13 +1,13 @@
 """Main ContextEngine — the primary public API."""
 
 from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional, Union
 
 from ctxeng.models import Context, ContextFile, TokenBudget
-from ctxeng.scorer import rank_files
 from ctxeng.optimizer import count_tokens, detect_language, optimize_budget
-from ctxeng.sources import collect_filesystem, collect_git_changed, collect_explicit
+from ctxeng.scorer import rank_files
+from ctxeng.sources import collect_explicit, collect_filesystem, collect_git_changed
 
 
 class ContextEngine:
@@ -35,12 +35,12 @@ class ContextEngine:
 
     def __init__(
         self,
-        root: Union[str, Path] = ".",
+        root: str | Path = ".",
         model: str = "claude-sonnet-4",
-        budget: Optional[TokenBudget] = None,
+        budget: TokenBudget | None = None,
         max_file_size_kb: int = 500,
-        include_patterns: Optional[list[str]] = None,
-        exclude_patterns: Optional[list[str]] = None,
+        include_patterns: list[str] | None = None,
+        exclude_patterns: list[str] | None = None,
         use_git: bool = True,
     ) -> None:
         self.root = Path(root).resolve()
@@ -55,7 +55,7 @@ class ContextEngine:
         self,
         query: str = "",
         *,
-        files: Optional[list[Union[str, Path]]] = None,
+        files: list[str | Path] | None = None,
         git_diff: bool = False,
         git_base: str = "HEAD",
         system_prompt: str = "",

@@ -1,10 +1,10 @@
 """Source collectors: gather raw files from different origins."""
 
 from __future__ import annotations
-import subprocess
-from pathlib import Path
-from typing import Iterator, Optional
 
+import subprocess
+from collections.abc import Iterator
+from pathlib import Path
 
 # File extensions that are likely source code / config (not binary)
 TEXT_EXTENSIONS: set[str] = {
@@ -45,8 +45,8 @@ def _should_skip_dir(dir_path: Path) -> bool:
 def collect_filesystem(
     root: Path,
     max_file_size_kb: int = 500,
-    include_patterns: Optional[list[str]] = None,
-    exclude_patterns: Optional[list[str]] = None,
+    include_patterns: list[str] | None = None,
+    exclude_patterns: list[str] | None = None,
 ) -> Iterator[tuple[Path, str]]:
     """
     Walk the filesystem from `root` and yield (path, content) for source files.
@@ -83,12 +83,10 @@ def collect_filesystem(
 
         # Pattern filtering
         rel = path.relative_to(root)
-        if include_patterns:
-            if not any(path.match(p) for p in include_patterns):
-                continue
-        if exclude_patterns:
-            if any(path.match(p) for p in exclude_patterns):
-                continue
+        if include_patterns and not any(path.match(p) for p in include_patterns):
+            continue
+        if exclude_patterns and any(path.match(p) for p in exclude_patterns):
+            continue
 
         try:
             content = path.read_text(encoding="utf-8", errors="replace")

@@ -10,6 +10,7 @@ Usage:
 """
 
 from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -63,10 +64,10 @@ def cmd_build(args: argparse.Namespace) -> None:
 
 
 def cmd_info(args: argparse.Namespace) -> None:
-    from ctxeng import ContextEngine
-    from ctxeng.sources import collect_filesystem
-    from ctxeng.optimizer import count_tokens, detect_language
     import subprocess
+
+    from ctxeng.optimizer import count_tokens, detect_language
+    from ctxeng.sources import collect_filesystem
 
     root = Path(args.root).resolve()
     print(f"Project: {root}")

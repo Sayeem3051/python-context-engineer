@@ -6,11 +6,11 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/ctxeng/"><img src="https://img.shields.io/pypi/v/ctxeng?color=blue&label=pypi" alt="PyPI"></a>
+  <a href="https://pypi.org/project/ctxeng/"><img src="https://img.shields.io/pypi/v/ctxeng?color=blue&label=pypi&cacheSeconds=3600" alt="PyPI"></a>
   <a href="https://github.com/sayeem3051/python-context-engineer/actions"><img src="https://github.com/sayeem3051/python-context-engineer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://pypi.org/project/ctxeng/"><img src="https://img.shields.io/pypi/pyversions/ctxeng" alt="Python"></a>
-  <img src="https://img.shields.io/github/license/sayeem3051/python-context-engineer" alt="License">
-  <img src="https://img.shields.io/pypi/dm/ctxeng?label=downloads" alt="Downloads">
+  <a href="https://pypi.org/project/ctxeng/"><img src="https://img.shields.io/pypi/pyversions/ctxeng?cacheSeconds=3600" alt="Python"></a>
+  <img src="https://img.shields.io/github/license/sayeem3051/python-context-engineer?cacheSeconds=3600" alt="License">
+  <img src="https://img.shields.io/pypi/dm/ctxeng?label=downloads&cacheSeconds=3600" alt="Downloads">
 </p>
 
 ---

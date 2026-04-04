@@ -13,6 +13,10 @@
   <img src="https://img.shields.io/pypi/dm/ctxeng?label=downloads&cacheSeconds=3600" alt="Downloads">
 </p>
 
+<p align="center">
+  <img src="assets/ctxeng-demo.gif" alt="ctxeng demo" width="800">
+</p>
+
 ---
 
 **Context engineering** is the new prompt engineering.

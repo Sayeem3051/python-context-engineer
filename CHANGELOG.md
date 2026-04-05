@@ -7,6 +7,8 @@
 - `ctxeng.costs`: `COST_PER_1K_INPUT_TOKENS`, `estimate_cost()`, `matched_pricing_model()`
 - `Context.cost_estimate` and `Context.summary(show_cost=...)` with **Est. cost** line
 - CLI: `--show-cost` / `--no-show-cost` (default: show)
+- Optional extra `watch`: `pip install "ctxeng[watch]"` pulls in `watchdog>=3.0` (for watch mode)
+- PyPI package keywords refreshed (`import-graph`, `cost-estimation`, etc.)
 
 ## [0.1.2] — 2026-04-05
 

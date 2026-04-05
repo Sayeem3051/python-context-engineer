@@ -12,8 +12,8 @@ requires-python = ">=3.10"
 authors = [{ name = "ctxeng contributors" }]
 keywords = [
     "llm", "context", "context-engineering", "claude", "openai",
-    "gpt", "token", "ai", "developer-tools", "codebase", "pathspec",
-    "ignore", "gitignore",
+    "gpt", "token", "ai", "developer-tools", "codebase",
+    "import-graph", "cost-estimation", "pathspec",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -40,12 +40,16 @@ anthropic = ["anthropic>=0.25"]
 openai    = ["openai>=1.0"]
 langchain = ["langchain-core>=0.2"]
 
+# File watching (ctxeng watch)
+watch = ["watchdog>=3.0"]
+
 # Install everything
 all = [
     "tiktoken>=0.7",
     "anthropic>=0.25",
     "openai>=1.0",
     "langchain-core>=0.2",
+    "watchdog>=3.0",
 ]
 
 # Dev / test

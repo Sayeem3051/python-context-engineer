@@ -47,6 +47,12 @@ For accurate token counting (strongly recommended):
 pip install "ctxeng[tiktoken]"
 ```
 
+For file watching (used by `ctxeng watch` when that command is available):
+
+```bash
+pip install "ctxeng[watch]"
+```
+
 For one-line LLM calls:
 
 ```bash

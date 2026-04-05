@@ -71,6 +71,7 @@ print(ctx.summary())
 # Context summary (12,340 tokens / 197,440 budget):
 #   Included : 8 files
 #   Skipped  : 23 files (over budget)
+#   Est. cost: ~$0.037 (claude-sonnet-4)
 #   [████████  ] 0.84  src/auth/login.py
 #   [███████   ] 0.71  src/auth/middleware.py
 #   [█████     ] 0.53  src/models/user.py
@@ -222,6 +223,30 @@ expanded = expand_with_imports(
 )
 ```
 
+### Cost estimates
+
+`ContextEngine` fills ``ctx.cost_estimate`` with a **rough USD** figure for **input tokens** only, using built-in per‑1K rates for common models (see ``ctxeng.costs.COST_PER_1K_INPUT_TOKENS``). Unknown model names yield ``None``. Rates are indicative—verify with your provider before budgeting.
+
+``Context.summary()`` includes a line when a cost is known:
+
+```text
+Context summary (12,340 tokens / 197,440 budget):
+  Included : 8 files
+  Skipped  : 23 files (over budget)
+  Est. cost: ~$0.037 (claude-sonnet-4)
+```
+
+```python
+from ctxeng import estimate_cost, ContextEngine
+
+engine = ContextEngine(root=".", model="gpt-4o")
+ctx = engine.build("Explain this module")
+print(ctx.cost_estimate)   # float | None
+print(ctx.summary())       # includes Est. cost when known
+```
+
+CLI: cost line is **on** by default; use ``--no-show-cost`` to omit it from stderr.
+
 ---
 
 ## How It Works
@@ -364,7 +389,8 @@ ContextBuilder(root=".")
 
 ```python
 ctx.to_string(fmt="xml")    # → str ready to paste into an LLM
-ctx.summary()               # → human-readable summary with token counts
+ctx.summary(show_cost=True) # → summary; optional show_cost=False hides Est. cost
+ctx.cost_estimate           # → float | None (rough input USD for known models)
 ctx.files                   # → list[ContextFile], sorted by relevance
 ctx.skipped_files           # → files that didn't fit the budget
 ctx.total_tokens            # → estimated token usage
@@ -408,6 +434,8 @@ build options:
                   Expand with local Python import graph (default: on)
   --import-graph-depth N
                   Import hops when import graph is on (default: 1)
+  --show-cost / --no-show-cost
+                  Include estimated input cost in stderr summary (default: on)
 ```
 
 ---
@@ -444,8 +472,8 @@ You could. But you'll hit these problems immediately:
 - [ ] Semantic similarity scoring
 - [ ] `ctxeng watch` — auto-rebuild on file changes
 - [ ] VSCode extension
-- [ ] Cost estimates
 - [ ] Streaming context into LLM APIs
+- [x] Cost estimates (input-token USD hint in summary) ✅
 - [x] Import graph analysis (local Python static imports) ✅
 - [x] `.ctxengignore` file support ✅
 

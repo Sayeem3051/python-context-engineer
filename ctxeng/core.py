@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ctxeng.costs import estimate_cost, matched_pricing_model
 from ctxeng.import_graph import build_import_graph, expand_with_imports
 from ctxeng.models import Context, ContextFile, TokenBudget
 from ctxeng.optimizer import count_tokens, detect_language, optimize_budget
@@ -139,8 +140,13 @@ class ContextEngine:
 
         total_tokens = sum(f.token_count for f in included) + query_tokens + system_tokens
 
-        # 5. Gather metadata
+        # 5. Gather metadata and cost hint
         metadata = self._gather_metadata()
+        metadata["model"] = self.model
+        pk = matched_pricing_model(self.model)
+        if pk:
+            metadata["pricing_model"] = pk
+        cost_estimate = estimate_cost(total_tokens, self.model)
 
         return Context(
             files=included,
@@ -150,6 +156,7 @@ class ContextEngine:
             budget=self.budget,
             skipped_files=skipped,
             metadata=metadata,
+            cost_estimate=cost_estimate,
         )
 
     def _gather_metadata(self) -> dict:

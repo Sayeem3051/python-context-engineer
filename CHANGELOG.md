@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3] — 2026-04-05
+
+### Added
+
+- `ctxeng.costs`: `COST_PER_1K_INPUT_TOKENS`, `estimate_cost()`, `matched_pricing_model()`
+- `Context.cost_estimate` and `Context.summary(show_cost=...)` with **Est. cost** line
+- CLI: `--show-cost` / `--no-show-cost` (default: show)
+
 ## [0.1.2] — 2026-04-05
 
 ### Added

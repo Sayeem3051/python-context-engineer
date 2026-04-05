@@ -71,6 +71,7 @@ class Context:
         budget:          The token budget used to build this context.
         skipped_files:   Files that were scored but excluded due to budget.
         metadata:        Extra information (git branch, project name, etc.).
+        cost_estimate:   Rough USD cost for input tokens, or ``None`` if unknown model.
     """
     files: list[ContextFile] = field(default_factory=list)
     system_prompt: str = ""
@@ -79,6 +80,7 @@ class Context:
     budget: TokenBudget | None = None
     skipped_files: list[ContextFile] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
+    cost_estimate: float | None = None
 
     def to_string(self, fmt: str = "xml") -> str:
         """
@@ -137,14 +139,17 @@ class Context:
             parts.append(f"FILE: {f.path}\n{f.content}")
         return "\n\n---\n\n".join(parts)
 
-    def summary(self) -> str:
+    def summary(self, *, show_cost: bool = True) -> str:
         """Human-readable summary of what's in the context."""
+        avail = self.budget.available if self.budget else 0
         lines = [
-            f"Context summary ({self.total_tokens:,} tokens / "
-            f"{self.budget.available:,} budget):",
+            f"Context summary ({self.total_tokens:,} tokens / {avail:,} budget):",
             f"  Included : {len(self.files)} files",
             f"  Skipped  : {len(self.skipped_files)} files (over budget)",
         ]
+        if show_cost and self.cost_estimate is not None:
+            label = self.metadata.get("pricing_model") or self.metadata.get("model", "model")
+            lines.append(f"  Est. cost: ~${self.cost_estimate:.3f} ({label})")
         for f in self.files:
             bar = "█" * int(f.relevance_score * 10)
             lines.append(f"  [{bar:<10}] {f.relevance_score:.2f}  {f.path}")

@@ -53,7 +53,7 @@ def cmd_build(args: argparse.Namespace) -> None:
 
     ctx = builder.build(query)
 
-    print(ctx.summary(), file=sys.stderr)
+    print(ctx.summary(show_cost=args.show_cost), file=sys.stderr)
     print("", file=sys.stderr)
     print("─" * 60, file=sys.stderr)
     print("Context output:", file=sys.stderr)
@@ -154,6 +154,12 @@ def main() -> None:
         default=1,
         metavar="N",
         help="Import hops when --import-graph is on (default: 1)",
+    )
+    build_p.add_argument(
+        "--show-cost",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Show estimated API cost in stderr summary (default: on)",
     )
     build_p.set_defaults(func=cmd_build)
 

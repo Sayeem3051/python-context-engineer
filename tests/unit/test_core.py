@@ -202,6 +202,39 @@ def test_context_summary():
     assert "Skipped" in summary
 
 
+# ── Cost estimates ───────────────────────────────────────────────────────────
+
+def test_estimate_cost_known_model():
+    from ctxeng.costs import estimate_cost
+
+    assert estimate_cost(1000, "gpt-4o") == pytest.approx(0.005)
+    assert estimate_cost(10_000, "claude-sonnet-4") == pytest.approx(0.03)
+
+
+def test_estimate_cost_unknown_model():
+    from ctxeng.costs import estimate_cost
+
+    assert estimate_cost(5000, "some-unknown-llm") is None
+
+
+def test_context_summary_includes_cost_when_set():
+    from ctxeng.models import Context, TokenBudget
+
+    ctx = Context(
+        files=[],
+        total_tokens=12_340,
+        budget=TokenBudget(total=200_000),
+        cost_estimate=0.03702,
+        metadata={"pricing_model": "claude-sonnet-4"},
+    )
+    out = ctx.summary()
+    assert "Est. cost" in out
+    assert "claude-sonnet-4" in out
+    assert "~$0.037" in out
+    hidden = ctx.summary(show_cost=False)
+    assert "Est. cost" not in hidden
+
+
 # ── Filesystem source ─────────────────────────────────────────────────────────
 
 def test_collect_filesystem_basic():

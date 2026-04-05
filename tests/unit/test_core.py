@@ -1,9 +1,9 @@
 """Unit tests for ctxeng core components."""
 
-import pytest
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
+import pytest
 
 # ── Token counting ────────────────────────────────────────────────────────────
 
@@ -289,6 +289,89 @@ def test_collect_filesystem_respects_ctxengignore():
         assert "keep.py" in paths
         assert "poetry.lock" not in paths
         assert "docs/readme.md" not in paths
+
+
+# ── Import graph ──────────────────────────────────────────────────────────────
+
+def test_build_import_graph_absolute_import():
+    from ctxeng.import_graph import build_import_graph
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "main.py").write_text("import util\n", encoding="utf-8")
+        (root / "util.py").write_text("X = 1\n", encoding="utf-8")
+        files = [Path("main.py"), Path("util.py")]
+        graph = build_import_graph(root, files)
+        key = next(k for k in graph if k.name == "main.py")
+        targets = {t.as_posix() for t in graph[key]}
+        assert "util.py" in targets
+
+
+def test_build_import_graph_relative_import():
+    from ctxeng.import_graph import build_import_graph
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        pkg = root / "pkg"
+        pkg.mkdir()
+        (pkg / "mod.py").write_text("from . import side\n", encoding="utf-8")
+        (pkg / "side.py").write_text("Y = 2\n", encoding="utf-8")
+        files = [Path("pkg/mod.py"), Path("pkg/side.py")]
+        graph = build_import_graph(root, files)
+        key = next(k for k in graph if k.name == "mod.py")
+        targets = {t.as_posix() for t in graph[key]}
+        assert "pkg/side.py" in targets
+
+
+def test_expand_with_imports_decay_and_dedupe():
+    from ctxeng.import_graph import build_import_graph, expand_with_imports
+    from ctxeng.models import ContextFile
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "a.py").write_text("import b\n", encoding="utf-8")
+        (root / "b.py").write_text("Z = 3\n", encoding="utf-8")
+        files = [Path("a.py"), Path("b.py")]
+        graph = build_import_graph(root, files)
+        a_cf = ContextFile(
+            path=Path("a.py"),
+            content=(root / "a.py").read_text(encoding="utf-8"),
+            relevance_score=1.0,
+            language="python",
+        )
+        b_cf = ContextFile(
+            path=Path("b.py"),
+            content=(root / "b.py").read_text(encoding="utf-8"),
+            relevance_score=0.2,
+            language="python",
+        )
+        out = expand_with_imports([a_cf, b_cf], graph, root, max_depth=1, score_decay=0.7)
+        by_name = {f.path.as_posix(): f for f in out}
+        assert by_name["b.py"].relevance_score == 0.2
+
+
+def test_expand_with_imports_max_depth_two():
+    from ctxeng.import_graph import build_import_graph, expand_with_imports
+    from ctxeng.models import ContextFile
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "a.py").write_text("import b\n", encoding="utf-8")
+        (root / "b.py").write_text("import c\n", encoding="utf-8")
+        (root / "c.py").write_text("W = 0\n", encoding="utf-8")
+        files = [Path("a.py"), Path("b.py"), Path("c.py")]
+        graph = build_import_graph(root, files)
+        a_cf = ContextFile(
+            path=Path("a.py"),
+            content=(root / "a.py").read_text(encoding="utf-8"),
+            relevance_score=1.0,
+            language="python",
+        )
+        out = expand_with_imports([a_cf], graph, root, max_depth=2, score_decay=0.7)
+        scores = {f.path.as_posix(): f.relevance_score for f in out}
+        assert "b.py" in scores
+        assert "c.py" in scores
+        assert scores["c.py"] == pytest.approx(1.0 * 0.7 * 0.7)
 
 
 # ── ContextEngine integration ─────────────────────────────────────────────────

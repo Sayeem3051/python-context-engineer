@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ctxeng"
-version = "0.1.1"
+version = "0.1.2"
 description = "Build perfect LLM context from your Python codebase — automatically."
 readme = "README.md"
 license = { text = "MIT" }

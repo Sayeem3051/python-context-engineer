@@ -168,6 +168,60 @@ patterns = parse_ctxengignore(Path("."))
 # → list of pattern strings, or [] if no file
 ```
 
+### Import graph (Python)
+
+After files are scored, **ctxeng** parses static ``import`` / ``from … import`` statements in each discovered ``.py`` file, resolves **relative imports** from the file’s location, and can **pull in imported modules** from the same collection set before the token budget is applied.
+
+- **Default:** one hop (`import_graph_depth=1`), relevance for added files = parent score × **0.7**
+- **Edges only** to files already in the current discovery set (filesystem / git / explicit list)
+- Stdlib and third-party imports are ignored (no file under your root → no edge)
+
+```python
+from ctxeng import ContextEngine, ContextBuilder
+
+# Engine: on by default; adjust depth or turn off
+engine = ContextEngine(
+    root=".",
+    use_import_graph=True,
+    import_graph_depth=2,
+)
+
+ctx = (
+    ContextBuilder(".")
+    .for_model("claude-sonnet-4")
+    .use_import_graph(depth=2)   # follow two hops of local imports
+    # .no_import_graph()         # disable expansion
+    .build("Fix the checkout bug in orders")
+)
+```
+
+CLI (import expansion is **on** by default):
+
+```bash
+ctxeng build "Refactor auth" --no-import-graph
+ctxeng build "Refactor auth" --import-graph-depth 2
+```
+
+Lower-level API:
+
+```python
+from pathlib import Path
+from ctxeng import build_import_graph, expand_with_imports
+from ctxeng.models import ContextFile
+
+paths = [Path("src/app.py"), Path("src/lib.py")]
+graph = build_import_graph(Path("."), paths)
+# graph[path] → list of imported paths (within `paths`)
+
+expanded = expand_with_imports(
+    [ContextFile(path=paths[0], content="...", relevance_score=0.9, language="python")],
+    graph,
+    Path("."),
+    max_depth=1,
+    score_decay=0.7,
+)
+```
+
 ---
 
 ## How It Works
@@ -179,7 +233,7 @@ src/auth/login.py  ─┐
 src/models/user.py ─┤  1. Score files         2. Fit budget     <context>
 src/api/routes.py  ─┼─► vs query + git  ─►   smart truncate ─► <file>...</file>
 tests/test_auth.py ─┤     recency + AST        token-aware       <file>...</file>
-...500 more files  ─┘                                           </context>
+...500 more files  ─┘     (+ local Python import expansion)
 ```
 
 ### Scoring signals
@@ -192,6 +246,7 @@ Each file gets a relevance score from 0 → 1, combining:
 | **AST symbols** | Class/function/import names that match the query (Python) |
 | **Path relevance** | Filename and directory names matching query tokens |
 | **Git recency** | Files touched in recent commits score higher |
+| **Import expansion** | After scoring, locally imported Python modules can be added with a decayed score |
 
 ### Token budget optimization
 
@@ -270,6 +325,8 @@ ContextEngine(
     include_patterns=None,  # ["**/*.py"] — only these files
     exclude_patterns=None,  # ["tests/**"] — skip these
     use_git=True,           # Use git recency signal
+    use_import_graph=True,  # Add local Python imports of scored files
+    import_graph_depth=1,    # Hops along the import graph
 )
 ```
 
@@ -298,6 +355,7 @@ ContextBuilder(root=".")
     .with_system("You are an expert Python engineer.")
     .max_file_size(200)     # KB
     .no_git()
+    .use_import_graph(depth=2)  # optional; omit for default depth 1
     .build("query")
 # → Context
 ```
@@ -346,6 +404,10 @@ build options:
   --budget        Override total token budget
   --no-git        Disable git recency scoring
   --max-size      Max file size in KB (default: 500)
+  --import-graph / --no-import-graph
+                  Expand with local Python import graph (default: on)
+  --import-graph-depth N
+                  Import hops when import graph is on (default: 1)
 ```
 
 ---
@@ -382,9 +444,9 @@ You could. But you'll hit these problems immediately:
 - [ ] Semantic similarity scoring
 - [ ] `ctxeng watch` — auto-rebuild on file changes
 - [ ] VSCode extension
-- [ ] Import graph analysis
 - [ ] Cost estimates
 - [ ] Streaming context into LLM APIs
+- [x] Import graph analysis (local Python static imports) ✅
 - [x] `.ctxengignore` file support ✅
 
 ---

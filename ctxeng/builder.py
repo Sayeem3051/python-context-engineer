@@ -40,6 +40,8 @@ class ContextBuilder:
         self._system = ""
         self._max_file_size_kb = 500
         self._use_git = True
+        self._use_import_graph = True
+        self._import_graph_depth = 1
 
     def for_model(self, model: str) -> ContextBuilder:
         """Set the target model (determines token budget)."""
@@ -87,6 +89,17 @@ class ContextBuilder:
         self._use_git = False
         return self
 
+    def use_import_graph(self, depth: int = 1) -> ContextBuilder:
+        """Follow local Python imports from scored files (default depth 1)."""
+        self._use_import_graph = True
+        self._import_graph_depth = depth
+        return self
+
+    def no_import_graph(self) -> ContextBuilder:
+        """Disable import-graph expansion."""
+        self._use_import_graph = False
+        return self
+
     def build(self, query: str = "") -> Context:
         """
         Build and return the optimized Context.
@@ -105,6 +118,8 @@ class ContextBuilder:
             include_patterns=self._include or None,
             exclude_patterns=self._exclude or None,
             use_git=self._use_git,
+            use_import_graph=self._use_import_graph,
+            import_graph_depth=self._import_graph_depth,
         )
         return engine.build(
             query=query,

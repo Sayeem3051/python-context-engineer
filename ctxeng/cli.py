@@ -37,6 +37,10 @@ def cmd_build(args: argparse.Namespace) -> None:
         builder = builder.with_system(args.system)
     if args.no_git:
         builder = builder.no_git()
+    if not args.import_graph:
+        builder = builder.no_import_graph()
+    else:
+        builder = builder.use_import_graph(depth=args.import_graph_depth)
     if args.budget:
         builder = builder.with_budget(args.budget)
 
@@ -138,6 +142,19 @@ def main() -> None:
                          help="Override token budget total")
     build_p.add_argument("--max-size", type=int, default=500,
                          help="Max file size in KB (default: 500)")
+    build_p.add_argument(
+        "--import-graph",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Expand context using local Python import graph (default: on)",
+    )
+    build_p.add_argument(
+        "--import-graph-depth",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Import hops when --import-graph is on (default: 1)",
+    )
     build_p.set_defaults(func=cmd_build)
 
     # --- info ---

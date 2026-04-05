@@ -17,7 +17,7 @@ def score_file(path: Path, content: str, query: str, root: Path) -> float:
         - AST symbol extraction (Python)
         - File path proximity / naming
         - Git recency (recently changed files score higher)
-        - Import graph centrality (frequently imported = more important)
+        (Import graph expansion runs separately in :class:`~ctxeng.core.ContextEngine`.)
 
     Returns a float in [0, 1].
     """

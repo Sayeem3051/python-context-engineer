@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ctxeng.import_graph import build_import_graph, expand_with_imports
 from ctxeng.models import Context, ContextFile, TokenBudget
 from ctxeng.optimizer import count_tokens, detect_language, optimize_budget
 from ctxeng.scorer import rank_files
@@ -31,6 +32,8 @@ class ContextEngine:
         include_patterns:   Only include files matching these glob patterns.
         exclude_patterns:   Skip files matching these glob patterns.
         use_git:            Score files using git recency signal (default: True).
+        use_import_graph:   Pull in files imported by high-scoring Python modules (default: True).
+        import_graph_depth: How many import hops to follow (default: 1).
     """
 
     def __init__(
@@ -42,6 +45,8 @@ class ContextEngine:
         include_patterns: list[str] | None = None,
         exclude_patterns: list[str] | None = None,
         use_git: bool = True,
+        use_import_graph: bool = True,
+        import_graph_depth: int = 1,
     ) -> None:
         self.root = Path(root).resolve()
         self.model = model
@@ -50,6 +55,8 @@ class ContextEngine:
         self.include_patterns = include_patterns
         self.exclude_patterns = exclude_patterns
         self.use_git = use_git
+        self.use_import_graph = use_import_graph
+        self.import_graph_depth = import_graph_depth
 
     def build(
         self,
@@ -107,6 +114,16 @@ class ContextEngine:
             )
             for path, content, score in ranked
         ]
+
+        if self.use_import_graph and self.import_graph_depth > 0:
+            paths_in_raw = [p for p, _ in raw]
+            graph = build_import_graph(self.root, paths_in_raw)
+            context_files = expand_with_imports(
+                context_files,
+                graph,
+                self.root,
+                max_depth=self.import_graph_depth,
+            )
 
         # 4. Optimize for token budget
         query_tokens = count_tokens(query, self.model) if query else 0

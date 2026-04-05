@@ -8,7 +8,7 @@ from ctxeng.core import ContextEngine
 from ctxeng.ignore import parse_ctxengignore
 from ctxeng.models import Context, ContextFile, TokenBudget
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __all__ = [
     "ContextEngine",
     "ContextBuilder",

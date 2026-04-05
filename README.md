@@ -36,7 +36,9 @@ One small dependency ([pathspec](https://pypi.org/project/pathspec/)) powers ``.
 ## Installation
 
 ```bash
+# Core install (includes .ctxengignore support)
 pip install ctxeng
+# pathspec is included automatically
 ```
 
 For accurate token counting (strongly recommended):
@@ -377,12 +379,13 @@ You could. But you'll hit these problems immediately:
 
 ## Roadmap
 
-- [ ] Semantic similarity scoring (optional embedding model)
-- [ ] `ctxeng watch` — auto-rebuild context on file changes
+- [ ] Semantic similarity scoring
+- [ ] `ctxeng watch` — auto-rebuild on file changes
 - [ ] VSCode extension
-- [ ] Import graph analysis (include files imported by relevant files)
-- [x] `.ctxengignore` file support
+- [ ] Import graph analysis
+- [ ] Cost estimates
 - [ ] Streaming context into LLM APIs
+- [x] `.ctxengignore` file support ✅
 
 ---
 

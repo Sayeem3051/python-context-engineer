@@ -12,7 +12,8 @@ requires-python = ">=3.10"
 authors = [{ name = "ctxeng contributors" }]
 keywords = [
     "llm", "context", "context-engineering", "claude", "openai",
-    "gpt", "token", "ai", "developer-tools", "codebase",
+    "gpt", "token", "ai", "developer-tools", "codebase", "pathspec",
+    "ignore", "gitignore",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

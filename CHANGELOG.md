@@ -4,10 +4,17 @@
 
 ### Added
 
-- Python import graph: `build_import_graph()`, `expand_with_imports()`
+- `.ctxengignore` file support (gitignore-style patterns via pathspec)
+- `pathspec>=0.12` dependency (declared install requirement)
+- `parse_ctxengignore()` public API; patterns applied in filesystem collection
+- Import graph analysis: `build_import_graph()`, `expand_with_imports()`
 - `ContextEngine(use_import_graph=..., import_graph_depth=...)`
 - `ContextBuilder.use_import_graph(depth=...)` and `no_import_graph()`
 - CLI: `--import-graph` / `--no-import-graph`, `--import-graph-depth N`
+
+### Note
+
+[0.1.1] was tagged in git and recorded below, but **PyPI had no 0.1.1 upload**; the registry went **0.1.0 → 0.1.2**. This entry summarizes everything shipped in **0.1.2** on PyPI.
 
 ## [0.1.1] — 2026-04-05
 

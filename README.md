@@ -257,15 +257,9 @@ CLI: cost line is **on** by default; use ``--no-show-cost`` to omit it from stde
 
 ## How It Works
 
-```
-Your codebase                    ctxeng                      Your LLM
-─────────────                ────────────────            ────────────────
-src/auth/login.py  ─┐
-src/models/user.py ─┤  1. Score files         2. Fit budget     <context>
-src/api/routes.py  ─┼─► vs query + git  ─►   smart truncate ─► <file>...</file>
-tests/test_auth.py ─┤     recency + AST        token-aware       <file>...</file>
-...500 more files  ─┘     (+ local Python import expansion)
-```
+<p align="center">
+  <img src="assets/ctxeng_flowchart.svg" alt="ctxeng flow: your codebase → score files (query, git, AST, imports) → fit token budget → LLM-ready context" width="680" style="max-width: 100%; height: auto;">
+</p>
 
 ### Scoring signals
 

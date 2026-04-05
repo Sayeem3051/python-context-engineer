@@ -29,7 +29,7 @@ The quality of your LLM's output depends almost entirely on *what you put in the
 - **Fits the budget** — smart truncation keeps the best parts within any model's token limit
 - **Ships ready to paste** — XML, Markdown, or plain text output that works with Claude, GPT-4o, Gemini, and every other model
 
-Zero required dependencies. Works with any LLM.
+One small dependency ([pathspec](https://pypi.org/project/pathspec/)) powers ``.ctxengignore`` (gitignore-style patterns). Works with any LLM.
 
 ---
 
@@ -127,6 +127,43 @@ ctxeng build "Explain the payment flow" --output context.md
 
 # Project stats
 ctxeng info
+```
+
+### `.ctxengignore`
+
+Add a **`.ctxengignore`** file at your project root to exclude paths from filesystem discovery (same syntax as **`.gitignore`**). It is applied automatically when you run `ctxeng build`, `ctxeng info`, or `ContextEngine` / `ContextBuilder` without explicit `--files` / `include_files`.
+
+Example `.ctxengignore`:
+
+```gitignore
+# Dependencies
+node_modules/
+venv/
+.venv/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Migrations
+migrations/**
+**/migrations/**
+
+# Lock files
+*.lock
+poetry.lock
+package-lock.json
+```
+
+Supported patterns include `*`, `?`, `**`, directory slashes, and negation with `!` (full gitwildmatch semantics via pathspec). If `.ctxengignore` is missing, nothing is excluded beyond ctxeng’s built-in skips.
+
+```python
+from pathlib import Path
+from ctxeng import parse_ctxengignore
+
+patterns = parse_ctxengignore(Path("."))
+# → list of pattern strings, or [] if no file
 ```
 
 ---
@@ -344,7 +381,7 @@ You could. But you'll hit these problems immediately:
 - [ ] `ctxeng watch` — auto-rebuild context on file changes
 - [ ] VSCode extension
 - [ ] Import graph analysis (include files imported by relevant files)
-- [ ] `.ctxengignore` file support
+- [x] `.ctxengignore` file support
 - [ ] Streaming context into LLM APIs
 
 ---

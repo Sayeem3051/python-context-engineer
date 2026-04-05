@@ -6,6 +6,8 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
+from ctxeng.ignore import ctxengignore_pathspec, is_ctxengignored, parse_ctxengignore
+
 # File extensions that are likely source code / config (not binary)
 TEXT_EXTENSIONS: set[str] = {
     ".py", ".js", ".ts", ".jsx", ".tsx", ".go", ".rs", ".java", ".kt",
@@ -61,6 +63,7 @@ def collect_filesystem(
         (relative_path, file_content) tuples.
     """
     max_bytes = max_file_size_kb * 1024
+    ignore_spec = ctxengignore_pathspec(parse_ctxengignore(root))
 
     for path in sorted(root.rglob("*")):
         # Skip directories themselves
@@ -83,6 +86,8 @@ def collect_filesystem(
 
         # Pattern filtering
         rel = path.relative_to(root)
+        if is_ctxengignored(rel, ignore_spec):
+            continue
         if include_patterns and not any(path.match(p) for p in include_patterns):
             continue
         if exclude_patterns and any(path.match(p) for p in exclude_patterns):

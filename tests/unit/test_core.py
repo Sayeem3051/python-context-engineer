@@ -3,7 +3,6 @@
 import pytest
 from pathlib import Path
 import tempfile
-import os
 
 
 # ── Token counting ────────────────────────────────────────────────────────────
@@ -235,6 +234,61 @@ def test_collect_filesystem_skips_large_files():
         files = list(collect_filesystem(root, max_file_size_kb=10))
         paths = [str(p) for p, _ in files]
         assert not any("big.py" in p for p in paths)
+
+
+# ── .ctxengignore ─────────────────────────────────────────────────────────────
+
+def test_parse_ctxengignore_missing_returns_empty():
+    from ctxeng.ignore import parse_ctxengignore
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        assert parse_ctxengignore(root) == []
+
+
+def test_parse_ctxengignore_skips_comments_and_blanks():
+    from ctxeng.ignore import parse_ctxengignore
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / ".ctxengignore").write_text(
+            "# Dependencies\n"
+            "\n"
+            "node_modules/\n"
+            "*.lock\n"
+            "# trailing comment line ignored as whole line only\n",
+            encoding="utf-8",
+        )
+        patterns = parse_ctxengignore(root)
+        assert "node_modules/" in patterns
+        assert "*.lock" in patterns
+        assert not any(p.startswith("#") for p in patterns)
+        assert "" not in patterns
+
+
+def test_collect_filesystem_respects_ctxengignore():
+    from ctxeng.sources import collect_filesystem
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "keep.py").write_text("x = 1", encoding="utf-8")
+        (root / "poetry.lock").write_text("locked", encoding="utf-8")
+        docs = root / "docs"
+        docs.mkdir()
+        (docs / "readme.md").write_text("# Docs", encoding="utf-8")
+
+        (root / ".ctxengignore").write_text(
+            "*.lock\n"
+            "docs/**\n",
+            encoding="utf-8",
+        )
+
+        files = list(collect_filesystem(root))
+        paths = {p.as_posix() for p, _ in files}
+
+        assert "keep.py" in paths
+        assert "poetry.lock" not in paths
+        assert "docs/readme.md" not in paths
 
 
 # ── ContextEngine integration ─────────────────────────────────────────────────

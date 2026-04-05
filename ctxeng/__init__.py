@@ -5,7 +5,15 @@ Automatically build, compress, and inject perfect LLM context from your codebase
 
 from ctxeng.builder import ContextBuilder
 from ctxeng.core import ContextEngine
+from ctxeng.ignore import parse_ctxengignore
 from ctxeng.models import Context, ContextFile, TokenBudget
 
 __version__ = "0.1.0"
-__all__ = ["ContextEngine", "ContextBuilder", "Context", "ContextFile", "TokenBudget"]
+__all__ = [
+    "ContextEngine",
+    "ContextBuilder",
+    "Context",
+    "ContextFile",
+    "TokenBudget",
+    "parse_ctxengignore",
+]

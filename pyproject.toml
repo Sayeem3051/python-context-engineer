@@ -26,8 +26,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-# Zero required dependencies — everything optional
-dependencies = []
+dependencies = [
+    "pathspec>=0.12.1",
+]
 
 [project.optional-dependencies]
 # Accurate token counting (strongly recommended)

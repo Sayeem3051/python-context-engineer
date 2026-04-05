@@ -1,10 +1,21 @@
 name: CI
 
+# Tag pushes must be listed explicitly; branch-only `push` does not run on new tags,
+# so "Publish to PyPI" would always be skipped without `tags:` here.
 on:
   push:
     branches: [main, dev]
+    tags:
+      - "v*"
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_to_pypi:
+        description: "Publish to PyPI after tests (only if this version is not already on PyPI)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   test:
@@ -47,7 +58,13 @@ jobs:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    # Runs after a version tag push (e.g. v0.1.3), or manual run with publish enabled.
+    if: |
+      needs.test.result == 'success' &&
+      (
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_pypi == 'true')
+      )
 
     steps:
       - uses: actions/checkout@v4

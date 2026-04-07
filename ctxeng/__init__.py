@@ -11,7 +11,7 @@ from ctxeng.import_graph import build_import_graph, expand_with_imports
 from ctxeng.models import Context, ContextFile, TokenBudget
 from ctxeng.watcher import ContextWatcher, WatchConfig
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __all__ = [
     "ContextEngine",
     "ContextBuilder",

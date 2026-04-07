@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5] — 2026-04-07
+
+### Added
+
+- Optional semantic similarity scoring (`ctxeng[semantic]`) using local embeddings with caching
+- CLI: `--semantic` and `--semantic-model` for `ctxeng build` and `ctxeng watch`
+
 ## [0.1.4] — 2026-04-07
 
 ### Changed

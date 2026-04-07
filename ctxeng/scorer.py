@@ -7,8 +7,17 @@ import re
 import subprocess
 from pathlib import Path
 
+from ctxeng.semantic import compute_semantic_scores
 
-def score_file(path: Path, content: str, query: str, root: Path) -> float:
+
+def score_file(
+    path: Path,
+    content: str,
+    query: str,
+    root: Path,
+    *,
+    semantic_score: float = 0.0,
+) -> float:
     """
     Score how relevant a file is to the given query (0.0 – 1.0).
 
@@ -18,6 +27,7 @@ def score_file(path: Path, content: str, query: str, root: Path) -> float:
         - File path proximity / naming
         - Git recency (recently changed files score higher)
         (Import graph expansion runs separately in :class:`~ctxeng.core.ContextEngine`.)
+        - Semantic similarity (optional; requires `sentence-transformers`)
 
     Returns a float in [0, 1].
     """
@@ -33,15 +43,25 @@ def score_file(path: Path, content: str, query: str, root: Path) -> float:
     if git_score is not None:
         scores.append(git_score)
 
-    # Weighted average — keyword + AST matter most
+    # Weighted average — keyword + AST matter most.
+    # If semantic scoring is available, it adds as a 5th signal at weight 0.3,
+    # and other weights are reduced proportionally (total remains 1.0).
     weights = [0.4, 0.2, 0.25, 0.15]
     while len(weights) > len(scores):
         weights.pop()
-    # Renormalize
-    total_w = sum(weights)
-    weights = [w / total_w for w in weights]
 
-    return min(1.0, sum(s * w for s, w in zip(scores, weights, strict=False)))
+    if semantic_score > 0.0:
+        semantic_w = 0.3
+        base_total = sum(weights) or 1.0
+        scaled = [(w / base_total) * (1.0 - semantic_w) for w in weights]
+        return min(
+            1.0,
+            sum(s * w for s, w in zip(scores, scaled, strict=False)) + semantic_score * semantic_w,
+        )
+
+    total_w = sum(weights) or 1.0
+    norm = [w / total_w for w in weights]
+    return min(1.0, sum(s * w for s, w in zip(scores, norm, strict=False)))
 
 
 def _keyword_score(content: str, query: str) -> float:
@@ -137,14 +157,27 @@ def rank_files(
     files: list[tuple[Path, str]],
     query: str,
     root: Path,
+    *,
+    use_semantic: bool = False,
+    semantic_model: str = "all-MiniLM-L6-v2",
 ) -> list[tuple[Path, str, float]]:
     """
     Score and rank a list of (path, content) tuples.
 
     Returns sorted list of (path, content, score) descending by score.
     """
-    scored = [
-        (path, content, score_file(path, content, query, root))
-        for path, content in files
-    ]
+    semantic_scores: dict[Path, float] = {}
+    if use_semantic and files and query:
+        semantic_scores = compute_semantic_scores(files, query, model_name=semantic_model, root=root)
+
+    scored = []
+    for path, content in files:
+        s = score_file(
+            path,
+            content,
+            query,
+            root,
+            semantic_score=semantic_scores.get(path, 0.0),
+        )
+        scored.append((path, content, s))
     return sorted(scored, key=lambda x: x[2], reverse=True)

@@ -41,6 +41,8 @@ def cmd_build(args: argparse.Namespace) -> None:
         builder = builder.no_import_graph()
     else:
         builder = builder.use_import_graph(depth=args.import_graph_depth)
+    if args.semantic:
+        builder = builder.use_semantic(model=args.semantic_model)
     if args.budget:
         builder = builder.with_budget(args.budget)
 
@@ -131,6 +133,8 @@ def cmd_watch(args: argparse.Namespace) -> None:
         builder = builder.no_import_graph()
     else:
         builder = builder.use_import_graph(depth=args.import_graph_depth)
+    if args.semantic:
+        builder = builder.use_semantic(model=args.semantic_model)
     if args.budget:
         builder = builder.with_budget(args.budget)
 
@@ -201,6 +205,16 @@ def main() -> None:
         default=True,
         help="Show estimated API cost in stderr summary (default: on)",
     )
+    build_p.add_argument(
+        "--semantic",
+        action="store_true",
+        help="Enable semantic similarity scoring (requires sentence-transformers)",
+    )
+    build_p.add_argument(
+        "--semantic-model",
+        default="all-MiniLM-L6-v2",
+        help="Sentence-transformers model name (default: all-MiniLM-L6-v2)",
+    )
     build_p.set_defaults(func=cmd_build)
 
     # --- info ---
@@ -248,6 +262,16 @@ def main() -> None:
         default=1.0,
         metavar="S",
         help="Polling interval in seconds (default: 1.0)",
+    )
+    watch_p.add_argument(
+        "--semantic",
+        action="store_true",
+        help="Enable semantic similarity scoring (requires sentence-transformers)",
+    )
+    watch_p.add_argument(
+        "--semantic-model",
+        default="all-MiniLM-L6-v2",
+        help="Sentence-transformers model name (default: all-MiniLM-L6-v2)",
     )
     watch_p.set_defaults(func=cmd_watch)
 

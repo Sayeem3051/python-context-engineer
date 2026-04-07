@@ -515,3 +515,43 @@ def test_context_watcher_writes_output_file(tmp_path: Path, capsys):
     assert out_file.exists()
     assert "## Task" in out_file.read_text(encoding="utf-8")
     assert "Written to" in capsys.readouterr().out
+
+
+# ── Semantic scoring ─────────────────────────────────────────────────────────
+
+
+def test_rank_files_uses_semantic_when_enabled(monkeypatch: pytest.MonkeyPatch):
+    from ctxeng import scorer
+
+    files = [
+        (Path("a.py"), "alpha"),
+        (Path("b.py"), "beta"),
+    ]
+
+    def fake_semantic(_files, _query, model_name, root):  # noqa: ARG001
+        assert model_name == "all-MiniLM-L6-v2"
+        return {Path("a.py"): 0.0, Path("b.py"): 1.0}
+
+    monkeypatch.setattr(scorer, "compute_semantic_scores", fake_semantic)
+
+    ranked = scorer.rank_files(files, "whatever", Path("."), use_semantic=True)
+    assert ranked[0][0] == Path("b.py")
+
+
+def test_rank_files_does_not_call_semantic_when_disabled(monkeypatch: pytest.MonkeyPatch):
+    from ctxeng import scorer
+
+    def boom(*_a, **_k):
+        raise AssertionError("semantic scoring should not run")
+
+    monkeypatch.setattr(scorer, "compute_semantic_scores", boom)
+    files = [(Path("a.py"), "alpha")]
+    scorer.rank_files(files, "q", Path("."), use_semantic=False)
+
+
+def test_score_file_semantic_weight_influences_total():
+    from ctxeng.scorer import score_file
+
+    base = score_file(Path("x.py"), "nothing", "query", Path("."), semantic_score=0.0)
+    boosted = score_file(Path("x.py"), "nothing", "query", Path("."), semantic_score=1.0)
+    assert boosted > base

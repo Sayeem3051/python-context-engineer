@@ -35,6 +35,8 @@ class ContextEngine:
         use_git:            Score files using git recency signal (default: True).
         use_import_graph:   Pull in files imported by high-scoring Python modules (default: True).
         import_graph_depth: How many import hops to follow (default: 1).
+        use_semantic:       Use local embedding similarity as an extra scoring signal (default: False).
+        semantic_model:     Sentence-transformers model name (default: all-MiniLM-L6-v2).
     """
 
     def __init__(
@@ -48,6 +50,8 @@ class ContextEngine:
         use_git: bool = True,
         use_import_graph: bool = True,
         import_graph_depth: int = 1,
+        use_semantic: bool = False,
+        semantic_model: str = "all-MiniLM-L6-v2",
     ) -> None:
         self.root = Path(root).resolve()
         self.model = model
@@ -58,6 +62,8 @@ class ContextEngine:
         self.use_git = use_git
         self.use_import_graph = use_import_graph
         self.import_graph_depth = import_graph_depth
+        self.use_semantic = use_semantic
+        self.semantic_model = semantic_model
 
     def build(
         self,
@@ -103,7 +109,13 @@ class ContextEngine:
             )
 
         # 2. Score and rank
-        ranked = rank_files(raw, query, self.root)
+        ranked = rank_files(
+            raw,
+            query,
+            self.root,
+            use_semantic=self.use_semantic,
+            semantic_model=self.semantic_model,
+        )
 
         # 3. Build ContextFile objects
         context_files = [

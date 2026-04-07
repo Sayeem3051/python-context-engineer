@@ -53,6 +53,12 @@ For file watching (used by `ctxeng watch` when that command is available):
 pip install "ctxeng[watch]"
 ```
 
+For semantic similarity scoring (optional local embeddings):
+
+```bash
+pip install "ctxeng[semantic]"
+```
+
 For one-line LLM calls:
 
 ```bash
@@ -290,6 +296,7 @@ Each file gets a relevance score from 0 → 1, combining:
 | **Path relevance** | Filename and directory names matching query tokens |
 | **Git recency** | Files touched in recent commits score higher |
 | **Import expansion** | After scoring, locally imported Python modules can be added with a decayed score |
+| **Semantic similarity** | Optional embedding similarity between query and file content |
 
 ### Token budget optimization
 
@@ -454,9 +461,13 @@ build options:
                   Import hops when import graph is on (default: 1)
   --show-cost / --no-show-cost
                   Include estimated input cost in stderr summary (default: on)
+  --semantic       Enable semantic similarity scoring (requires sentence-transformers)
+  --semantic-model Semantic model name (default: all-MiniLM-L6-v2)
 
 watch options:
   --interval S    Polling interval in seconds (default: 1.0)
+  --semantic       Enable semantic similarity scoring (requires sentence-transformers)
+  --semantic-model Semantic model name (default: all-MiniLM-L6-v2)
 ```
 
 ---
@@ -490,8 +501,8 @@ You could. But you'll hit these problems immediately:
 
 ## Roadmap
 
-- [ ] Semantic similarity scoring
-- [ ] `ctxeng watch` — auto-rebuild on file changes
+- [x] Semantic similarity scoring ✅
+- [x] `ctxeng watch` — auto-rebuild on file changes ✅
 - [ ] VSCode extension
 - [ ] Streaming context into LLM APIs
 - [x] Cost estimates (input-token USD hint in summary) ✅

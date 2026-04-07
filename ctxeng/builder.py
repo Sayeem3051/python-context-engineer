@@ -42,6 +42,8 @@ class ContextBuilder:
         self._use_git = True
         self._use_import_graph = True
         self._import_graph_depth = 1
+        self._use_semantic = False
+        self._semantic_model = "all-MiniLM-L6-v2"
 
     def for_model(self, model: str) -> ContextBuilder:
         """Set the target model (determines token budget)."""
@@ -100,6 +102,12 @@ class ContextBuilder:
         self._use_import_graph = False
         return self
 
+    def use_semantic(self, model: str = "all-MiniLM-L6-v2") -> ContextBuilder:
+        """Enable semantic similarity scoring (requires `sentence-transformers`)."""
+        self._use_semantic = True
+        self._semantic_model = model
+        return self
+
     def build(self, query: str = "") -> Context:
         """
         Build and return the optimized Context.
@@ -131,4 +139,6 @@ class ContextBuilder:
             use_git=self._use_git,
             use_import_graph=self._use_import_graph,
             import_graph_depth=self._import_graph_depth,
+            use_semantic=self._use_semantic,
+            semantic_model=self._semantic_model,
         )

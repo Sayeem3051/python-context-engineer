@@ -110,7 +110,18 @@ class ContextBuilder:
         Returns:
             :class:`~ctxeng.models.Context`
         """
-        engine = ContextEngine(
+        engine = self._build_engine()
+        return engine.build(
+            query=query,
+            files=self._explicit_files or None,
+            git_diff=self._use_git_diff,
+            git_base=self._git_base,
+            system_prompt=self._system,
+        )
+
+    def _build_engine(self) -> ContextEngine:
+        """Internal helper for CLI/watch integrations."""
+        return ContextEngine(
             root=self._root,
             model=self._model,
             budget=self._budget,
@@ -120,11 +131,4 @@ class ContextBuilder:
             use_git=self._use_git,
             use_import_graph=self._use_import_graph,
             import_graph_depth=self._import_graph_depth,
-        )
-        return engine.build(
-            query=query,
-            files=self._explicit_files or None,
-            git_diff=self._use_git_diff,
-            git_base=self._git_base,
-            system_prompt=self._system,
         )

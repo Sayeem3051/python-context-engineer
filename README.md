@@ -138,6 +138,24 @@ ctxeng build "Explain the payment flow" --output context.md
 ctxeng info
 ```
 
+### Watch mode
+
+Automatically rebuild context when files change (requires `watchdog`):
+
+```bash
+pip install "ctxeng[watch]"
+ctxeng watch "Fix the auth bug" --output context.md
+```
+
+Example output:
+
+```text
+[14:32:01] File changed: src/auth/login.py
+[14:32:01] Rebuilding context...
+[14:32:01] Done. 8 files, 12,340 tokens, ~$0.037
+[14:32:01] Written to: context.md
+```
+
 ### `.ctxengignore`
 
 Add a **`.ctxengignore`** file at your project root to exclude paths from filesystem discovery (same syntax as **`.gitignore`**). It is applied automatically when you run `ctxeng build`, `ctxeng info`, or `ContextEngine` / `ContextBuilder` without explicit `--files` / `include_files`.
@@ -436,6 +454,9 @@ build options:
                   Import hops when import graph is on (default: 1)
   --show-cost / --no-show-cost
                   Include estimated input cost in stderr summary (default: on)
+
+watch options:
+  --interval S    Polling interval in seconds (default: 1.0)
 ```
 
 ---

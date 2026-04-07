@@ -442,3 +442,76 @@ def test_builder_fluent_api():
         )
         assert ctx is not None
         assert len(ctx.files) >= 0  # may be 0 if no py files match
+
+
+# ── Watch mode ───────────────────────────────────────────────────────────────
+
+
+def test_context_watcher_debounces_rebuilds(capsys):
+    import time
+
+    from ctxeng.models import Context, TokenBudget
+    from ctxeng.watcher import ContextWatcher, WatchConfig
+
+    class DummyEngine:
+        def __init__(self, root: Path) -> None:
+            self.root = root
+            self.calls = 0
+
+        def build(self, query: str, **_kwargs) -> Context:
+            self.calls += 1
+            return Context(files=[], total_tokens=100, budget=TokenBudget(total=1000), cost_estimate=0.001)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        engine = DummyEngine(root)
+        watcher = ContextWatcher(
+            "q",
+            engine=engine,
+            config=WatchConfig(debounce_seconds=0.05, interval_seconds=0.01),
+        )
+
+        watcher.notify_change(root / "a.py")
+        watcher.notify_change(root / "b.py")
+        time.sleep(0.12)
+
+        assert engine.calls == 1
+        out = capsys.readouterr().out
+        assert "File changed" in out
+        assert "Rebuilding context" in out
+        assert "Done." in out
+
+
+def test_context_watcher_writes_output_file(tmp_path: Path, capsys):
+    import time
+
+    from ctxeng.models import Context, TokenBudget
+    from ctxeng.watcher import ContextWatcher, WatchConfig
+
+    class DummyEngine:
+        def __init__(self, root: Path) -> None:
+            self.root = root
+
+        def build(self, query: str, **_kwargs) -> Context:
+            return Context(
+                files=[],
+                total_tokens=10,
+                budget=TokenBudget(total=1000),
+                query=query,
+            )
+
+    out_file = tmp_path / "context.md"
+    engine = DummyEngine(tmp_path)
+    watcher = ContextWatcher(
+        "hello",
+        engine=engine,
+        output_file=out_file,
+        fmt="markdown",
+        config=WatchConfig(debounce_seconds=0.02, interval_seconds=0.01),
+    )
+    watcher.notify_change(tmp_path / "x.py")
+    time.sleep(0.08)
+
+    assert out_file.exists()
+    assert "## Task" in out_file.read_text(encoding="utf-8")
+    assert "Written to" in capsys.readouterr().out

@@ -107,6 +107,46 @@ def cmd_info(args: argparse.Namespace) -> None:
         print(f"  {lang:<15} {bar}  {count}")
 
 
+def cmd_watch(args: argparse.Namespace) -> None:
+    from ctxeng import ContextBuilder
+    from ctxeng.watcher import ContextWatcher, WatchConfig
+
+    builder = (
+        ContextBuilder(root=args.root)
+        .for_model(args.model)
+        .max_file_size(args.max_size)
+    )
+
+    if args.only:
+        builder = builder.only(*args.only)
+    if args.exclude:
+        builder = builder.exclude(*args.exclude)
+    if args.files:
+        builder = builder.include_files(*args.files)
+    if args.system:
+        builder = builder.with_system(args.system)
+    if args.no_git:
+        builder = builder.no_git()
+    if not args.import_graph:
+        builder = builder.no_import_graph()
+    else:
+        builder = builder.use_import_graph(depth=args.import_graph_depth)
+    if args.budget:
+        builder = builder.with_budget(args.budget)
+
+    query = " ".join(args.query) if args.query else ""
+
+    engine = builder._build_engine()
+    watcher = ContextWatcher(
+        query,
+        engine=engine,
+        output_file=args.output,
+        fmt=args.fmt,
+        config=WatchConfig(interval_seconds=args.interval),
+    )
+    watcher.run()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="ctxeng",
@@ -166,6 +206,50 @@ def main() -> None:
     # --- info ---
     info_p = sub.add_parser("info", help="Show project info and file stats")
     info_p.set_defaults(func=cmd_info)
+
+    # --- watch ---
+    watch_p = sub.add_parser("watch", help="Watch files and auto-rebuild context")
+    watch_p.add_argument("query", nargs="*", help="What you want the LLM to do")
+    watch_p.add_argument("--model", "-m", default="claude-sonnet-4",
+                         help="Target model (default: claude-sonnet-4)")
+    watch_p.add_argument("--fmt", "-f", default="xml",
+                         choices=["xml", "markdown", "plain"],
+                         help="Output format (default: xml)")
+    watch_p.add_argument("--output", "-o", help="Write output to file after each rebuild")
+    watch_p.add_argument("--only", nargs="+", metavar="PATTERN",
+                         help='Include only matching globs, e.g. "**/*.py"')
+    watch_p.add_argument("--exclude", nargs="+", metavar="PATTERN",
+                         help="Exclude matching globs")
+    watch_p.add_argument("--files", nargs="+", metavar="FILE",
+                         help="Explicit list of files to include")
+    watch_p.add_argument("--system", help="System prompt text")
+    watch_p.add_argument("--no-git", action="store_true",
+                         help="Disable git recency scoring")
+    watch_p.add_argument("--budget", type=int,
+                         help="Override token budget total")
+    watch_p.add_argument("--max-size", type=int, default=500,
+                         help="Max file size in KB (default: 500)")
+    watch_p.add_argument(
+        "--import-graph",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Expand context using local Python import graph (default: on)",
+    )
+    watch_p.add_argument(
+        "--import-graph-depth",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Import hops when --import-graph is on (default: 1)",
+    )
+    watch_p.add_argument(
+        "--interval",
+        type=float,
+        default=1.0,
+        metavar="S",
+        help="Polling interval in seconds (default: 1.0)",
+    )
+    watch_p.set_defaults(func=cmd_watch)
 
     args = parser.parse_args()
     args.func(args)

@@ -9,6 +9,7 @@ from ctxeng.costs import COST_PER_1K_INPUT_TOKENS, estimate_cost, matched_pricin
 from ctxeng.ignore import parse_ctxengignore
 from ctxeng.import_graph import build_import_graph, expand_with_imports
 from ctxeng.models import Context, ContextFile, TokenBudget
+from ctxeng.watcher import ContextWatcher, WatchConfig
 
 __version__ = "0.1.3"
 __all__ = [
@@ -23,4 +24,6 @@ __all__ = [
     "COST_PER_1K_INPUT_TOKENS",
     "estimate_cost",
     "matched_pricing_model",
+    "ContextWatcher",
+    "WatchConfig",
 ]

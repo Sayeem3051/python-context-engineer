@@ -9,7 +9,12 @@ description = "Build perfect LLM context from your Python codebase — automatic
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-authors = [{ name = "ctxeng contributors" }]
+authors = [
+    { name = "Abkari Mohammed Sayeem", email = "saeemabkari6@gmail.com" },
+]
+maintainers = [
+    { name = "Abkari Mohammed Sayeem", email = "saeemabkari6@gmail.com" },
+]
 keywords = [
     "llm", "context", "context-engineering", "claude", "openai",
     "gpt", "token", "ai", "developer-tools", "codebase",

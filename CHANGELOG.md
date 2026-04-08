@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.6] — 2026-04-07
+
+### Added
+
+- New `vscode-ctxeng` VS Code extension scaffold with:
+  - Sidebar webview panel (`CtxEng AI`) and secure API key storage via `SecretStorage`
+  - Multi-provider AI integration (OpenAI, Anthropic, Gemini, Mistral, Groq, Cohere, Together, DeepSeek, Ollama, xAI, OpenRouter)
+  - Context build/explain/watch command integration from VS Code
+- Advanced extension UX upgrades:
+  - Loading states for context building and AI requests
+  - Streaming AI response rendering in the webview
+  - Clickable selected-file navigation to open/reveal files
+  - Diff workflow for AI suggestions via `vscode.diff`
+  - Metrics panel for tokens, estimated cost, and selected file count
+
 ## [0.1.5] — 2026-04-07
 
 ### Added

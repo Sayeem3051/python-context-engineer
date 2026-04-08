@@ -503,8 +503,8 @@ You could. But you'll hit these problems immediately:
 
 - [x] Semantic similarity scoring ✅
 - [x] `ctxeng watch` — auto-rebuild on file changes ✅
-- [ ] VSCode extension
-- [ ] Streaming context into LLM APIs
+- [x] VSCode extension ✅
+- [x] Streaming context into LLM APIs ✅
 - [x] Cost estimates (input-token USD hint in summary) ✅
 - [x] Import graph analysis (local Python static imports) ✅
 - [x] `.ctxengignore` file support ✅

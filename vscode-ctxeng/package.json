@@ -1,0 +1,157 @@
+{
+  "name": "ctxeng",
+  "displayName": "ctxeng",
+  "description": "Build AI-ready context from your codebase and ask LLMs from VS Code.",
+  "version": "0.1.6",
+  "publisher": "ctxeng",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:ctxeng.sidebarView",
+    "onCommand:ctxeng.buildContext",
+    "onCommand:ctxeng.buildContextCurrentFile",
+    "onCommand:ctxeng.watchContext",
+    "onCommand:ctxeng.showSummary",
+    "onCommand:ctxeng.setApiKey",
+    "onCommand:ctxeng.clearApiKey",
+    "onCommand:ctxeng.listConfiguredProviders"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ctxeng",
+          "title": "CtxEng AI",
+          "icon": "media/ctxeng.svg"
+        }
+      ]
+    },
+    "views": {
+      "ctxeng": [
+        {
+          "id": "ctxeng.sidebarView",
+          "name": "CtxEng AI"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "ctxeng.buildContext",
+        "title": "ctxeng: Build Context for Query"
+      },
+      {
+        "command": "ctxeng.buildContextCurrentFile",
+        "title": "ctxeng: Build Context for Current File"
+      },
+      {
+        "command": "ctxeng.watchContext",
+        "title": "ctxeng: Watch and Auto-rebuild Context"
+      },
+      {
+        "command": "ctxeng.showSummary",
+        "title": "ctxeng: Show Context Summary"
+      },
+      {
+        "command": "ctxeng.setApiKey",
+        "title": "ctxeng: Set API Key"
+      },
+      {
+        "command": "ctxeng.clearApiKey",
+        "title": "ctxeng: Clear API Key"
+      },
+      {
+        "command": "ctxeng.listConfiguredProviders",
+        "title": "ctxeng: List Configured Providers"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "ctxeng.buildContext",
+        "key": "ctrl+shift+c",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "ctxeng",
+      "properties": {
+        "ctxeng.aiProvider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "mistral",
+            "groq",
+            "cohere",
+            "together",
+            "deepseek",
+            "ollama",
+            "xai",
+            "openrouter"
+          ],
+          "default": "openai"
+        },
+        "ctxeng.aiModel": {
+          "type": "string",
+          "default": "gpt-4o-mini"
+        },
+        "ctxeng.ollamaBaseUrl": {
+          "type": "string",
+          "default": "http://localhost:11434"
+        },
+        "ctxeng.ollamaModels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "llama3",
+            "mistral",
+            "codellama",
+            "phi3"
+          ]
+        },
+        "ctxeng.openrouterModel": {
+          "type": "string",
+          "default": "anthropic/claude-3.5-sonnet"
+        },
+        "ctxeng.openrouterSiteName": {
+          "type": "string",
+          "default": "CtxEng VS Code"
+        },
+        "ctxeng.model": {
+          "type": "string",
+          "default": "claude-sonnet-4"
+        },
+        "ctxeng.format": {
+          "type": "string",
+          "default": "markdown",
+          "enum": [
+            "xml",
+            "markdown",
+            "plain"
+          ]
+        },
+        "ctxeng.autowatch": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}

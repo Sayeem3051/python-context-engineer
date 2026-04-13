@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -73,11 +73,11 @@ def redact_text(
 
         for kind, label, pat in rules:
             if label == "api_key_assignment":
-                def repl(m: re.Match[str]) -> str:
+                def repl(m: re.Match[str], _label: str = label) -> str:
                     key = m.group(1)
                     quote = m.group(2) or ""
                     val = m.group(3)
-                    return f"{key}: {quote}[REDACTED:{label}:{_stable_hash(val)}]{quote}"
+                    return f"{key}: {quote}[REDACTED:{_label}:{_stable_hash(val)}]{quote}"
 
                 out, c = _sub_all(pat, out, repl)
             else:

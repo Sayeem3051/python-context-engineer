@@ -6,6 +6,7 @@ import json
 import os
 import time
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -61,8 +62,6 @@ class TraceWriter:
         self._fp.flush()
 
     def close(self) -> None:
-        try:
+        with suppress(Exception):
             self._fp.close()
-        except Exception:
-            pass
 

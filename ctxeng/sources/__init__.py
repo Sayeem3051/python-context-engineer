@@ -6,7 +6,12 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
-from ctxeng.ignore import combined_ignore_spec, is_ctxengignored, parse_ctxengignore, parse_gitignore
+from ctxeng.ignore import (
+    combined_ignore_spec,
+    is_ctxengignored,
+    parse_ctxengignore,
+    parse_gitignore,
+)
 
 # File extensions that are likely source code / config (not binary)
 TEXT_EXTENSIONS: set[str] = {
@@ -244,13 +249,9 @@ def _is_allowed(
         return False
 
     # If path is outside root, still apply allow/deny as absolute prefixes.
-    if allow_abs:
-        if not any(_is_relative_to(resolved, a) for a in allow_abs):
-            return False
-    if deny_abs:
-        if any(_is_relative_to(resolved, d) for d in deny_abs):
-            return False
-    return True
+    if allow_abs and not any(_is_relative_to(resolved, a) for a in allow_abs):
+        return False
+    return not (deny_abs and any(_is_relative_to(resolved, d) for d in deny_abs))
 
 
 def _is_relative_to(path: Path, other: Path) -> bool:

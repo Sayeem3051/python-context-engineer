@@ -6,7 +6,7 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
-from ctxeng.ignore import ctxengignore_pathspec, is_ctxengignored, parse_ctxengignore
+from ctxeng.ignore import combined_ignore_spec, is_ctxengignored, parse_ctxengignore, parse_gitignore
 
 # File extensions that are likely source code / config (not binary)
 TEXT_EXTENSIONS: set[str] = {
@@ -49,6 +49,10 @@ def collect_filesystem(
     max_file_size_kb: int = 500,
     include_patterns: list[str] | None = None,
     exclude_patterns: list[str] | None = None,
+    *,
+    respect_gitignore: bool = True,
+    allow_paths: list[str | Path] | None = None,
+    deny_paths: list[str | Path] | None = None,
 ) -> Iterator[tuple[Path, str]]:
     """
     Walk the filesystem from `root` and yield (path, content) for source files.
@@ -63,7 +67,13 @@ def collect_filesystem(
         (relative_path, file_content) tuples.
     """
     max_bytes = max_file_size_kb * 1024
-    ignore_spec = ctxengignore_pathspec(parse_ctxengignore(root))
+    ignore_spec = combined_ignore_spec(
+        gitignore_patterns=parse_gitignore(root) if respect_gitignore else [],
+        ctxeng_patterns=parse_ctxengignore(root),
+    )
+
+    allow_abs = [_to_abs(root, p) for p in (allow_paths or [])]
+    deny_abs = [_to_abs(root, p) for p in (deny_paths or [])]
 
     for path in sorted(root.rglob("*")):
         # Skip directories themselves
@@ -88,6 +98,8 @@ def collect_filesystem(
         rel = path.relative_to(root)
         if is_ctxengignored(rel, ignore_spec):
             continue
+        if not _is_allowed(path, root, allow_abs=allow_abs, deny_abs=deny_abs):
+            continue
         if include_patterns and not any(path.match(p) for p in include_patterns):
             continue
         if exclude_patterns and any(path.match(p) for p in exclude_patterns):
@@ -106,6 +118,10 @@ def collect_git_changed(
     root: Path,
     base: str = "HEAD",
     include_untracked: bool = True,
+    *,
+    respect_gitignore: bool = True,
+    allow_paths: list[str | Path] | None = None,
+    deny_paths: list[str | Path] | None = None,
 ) -> Iterator[tuple[Path, str]]:
     """
     Yield files that have changed relative to `base` (git diff).
@@ -121,6 +137,12 @@ def collect_git_changed(
         (relative_path, content) for each changed file.
     """
     changed: list[str] = []
+    ignore_spec = combined_ignore_spec(
+        gitignore_patterns=parse_gitignore(root) if respect_gitignore else [],
+        ctxeng_patterns=parse_ctxengignore(root),
+    )
+    allow_abs = [_to_abs(root, p) for p in (allow_paths or [])]
+    deny_abs = [_to_abs(root, p) for p in (deny_paths or [])]
 
     # Staged + unstaged changes
     for flag in ["--cached", ""]:
@@ -152,6 +174,11 @@ def collect_git_changed(
         path = root / rel_str
         if not path.exists() or not _is_text_file(path):
             continue
+        rel = Path(rel_str)
+        if is_ctxengignored(rel, ignore_spec):
+            continue
+        if not _is_allowed(path, root, allow_abs=allow_abs, deny_abs=deny_abs):
+            continue
         try:
             content = path.read_text(encoding="utf-8", errors="replace")
             yield Path(rel_str), content
@@ -162,15 +189,73 @@ def collect_git_changed(
 def collect_explicit(
     paths: list[Path],
     root: Path,
+    *,
+    respect_gitignore: bool = True,
+    allow_paths: list[str | Path] | None = None,
+    deny_paths: list[str | Path] | None = None,
 ) -> Iterator[tuple[Path, str]]:
     """Yield content for explicitly specified files."""
+    ignore_spec = combined_ignore_spec(
+        gitignore_patterns=parse_gitignore(root) if respect_gitignore else [],
+        ctxeng_patterns=parse_ctxengignore(root),
+    )
+    allow_abs = [_to_abs(root, p) for p in (allow_paths or [])]
+    deny_abs = [_to_abs(root, p) for p in (deny_paths or [])]
     for path in paths:
         abs_path = path if path.is_absolute() else root / path
         if not abs_path.exists():
             continue
         try:
+            rel = abs_path.relative_to(root)
+        except ValueError:
+            rel = None
+        if rel is not None and is_ctxengignored(rel, ignore_spec):
+            continue
+        if not _is_allowed(abs_path, root, allow_abs=allow_abs, deny_abs=deny_abs):
+            continue
+        try:
             content = abs_path.read_text(encoding="utf-8", errors="replace")
-            rel = abs_path.relative_to(root) if abs_path.is_relative_to(root) else abs_path
-            yield rel, content
+            out_path = abs_path.relative_to(root) if abs_path.is_relative_to(root) else abs_path
+            yield out_path, content
         except OSError:
             continue
+
+
+def _to_abs(root: Path, p: str | Path) -> Path:
+    path = Path(p)
+    return path if path.is_absolute() else (root / path).resolve()
+
+
+def _is_allowed(
+    abs_path: Path,
+    root: Path,
+    *,
+    allow_abs: list[Path],
+    deny_abs: list[Path],
+) -> bool:
+    """
+    Enforce allow/deny filters. If allow list is non-empty, path must fall under
+    at least one allow prefix. If deny list is non-empty, path must not fall
+    under any deny prefix.
+    """
+    try:
+        resolved = abs_path.resolve()
+    except OSError:
+        return False
+
+    # If path is outside root, still apply allow/deny as absolute prefixes.
+    if allow_abs:
+        if not any(_is_relative_to(resolved, a) for a in allow_abs):
+            return False
+    if deny_abs:
+        if any(_is_relative_to(resolved, d) for d in deny_abs):
+            return False
+    return True
+
+
+def _is_relative_to(path: Path, other: Path) -> bool:
+    try:
+        path.relative_to(other)
+        return True
+    except ValueError:
+        return False

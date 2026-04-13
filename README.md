@@ -463,14 +463,88 @@ build options:
                   Include estimated input cost in stderr summary (default: on)
   --semantic       Enable semantic similarity scoring (requires sentence-transformers)
   --semantic-model Semantic model name (default: all-MiniLM-L6-v2)
+  --gitignore / --no-gitignore
+                  Respect .gitignore in addition to .ctxengignore (default: on)
+  --allow          Allowlist path prefixes; only these paths may be included
+  --deny           Denylist path prefixes; these paths will never be included
+  --trace          Write a JSONL trace under .ctxeng/traces/
+  --trace-dir      Override trace output directory
+  --trace-id       Provide a custom trace id
+  --rag            Enable chunk-level retrieval (RAG)
+  --rag-max-chunks Max chunks to retrieve (default: 20)
+  --rag-chunk-max-lines
+                  Chunk size in lines (default: 120)
+  --rag-chunk-overlap
+                  Chunk overlap in lines (default: 20)
+  --rag-embedding-model
+                  Sentence-transformers model name for embeddings
+  --skeleton       Use AST skeletons for Python files
+  --fewshot        Inject few-shot examples from .ctxeng/examples
+  --fewshot-dir    Few-shot examples directory (default: .ctxeng/examples)
+  --fewshot-max-files
+                  Max few-shot files (default: 5)
+  --snapshot       Save a versioned context snapshot under .ctxeng/snapshots/
+  --snapshot-id    Optional snapshot id
 
 watch options:
   --interval S    Polling interval in seconds (default: 1.0)
   --semantic       Enable semantic similarity scoring (requires sentence-transformers)
   --semantic-model Semantic model name (default: all-MiniLM-L6-v2)
+  --gitignore / --no-gitignore
+                  Respect .gitignore in addition to .ctxengignore (default: on)
+  --allow          Allowlist path prefixes; only these paths may be included
+  --deny           Denylist path prefixes; these paths will never be included
+  --trace          Write a JSONL trace under .ctxeng/traces/
+  --trace-dir      Override trace output directory
+  --trace-id       Provide a custom trace id
+  --rag            Enable chunk-level retrieval (RAG)
+  --rag-max-chunks Max chunks to retrieve (default: 20)
+  --rag-chunk-max-lines
+                  Chunk size in lines (default: 120)
+  --rag-chunk-overlap
+                  Chunk overlap in lines (default: 20)
+  --rag-embedding-model
+                  Sentence-transformers model name for embeddings
+  --skeleton       Use AST skeletons for Python files
+  --fewshot        Inject few-shot examples from .ctxeng/examples
+  --fewshot-dir    Few-shot examples directory (default: .ctxeng/examples)
+  --fewshot-max-files
+                  Max few-shot files (default: 5)
 ```
 
 ---
+
+## Security (redaction)
+
+By default, ctxeng **redacts common secrets and PII** from file contents before they are counted for tokens, traced, or printed.
+
+## Tracing
+
+Enable local tracing with:
+
+```bash
+ctxeng build "Fix auth" --trace
+```
+
+This writes JSONL events to `<root>/.ctxeng/traces/` and also includes `trace_id` and `trace_path` in the context metadata.
+
+## Snapshots
+
+Save a reproducible output bundle:
+
+```bash
+ctxeng build "Review changes" --git-diff --snapshot --output context.xml
+```
+
+Snapshots are saved under `<root>/.ctxeng/snapshots/<id>/` with `context.txt` and `manifest.json`.
+
+## CI
+
+Use `ctxeng ci` in pipelines:
+
+```bash
+ctxeng ci "Generate docs" --output artifact_context.md --fmt markdown --trace --snapshot
+```
 
 ## Supported Models
 
@@ -508,6 +582,13 @@ You could. But you'll hit these problems immediately:
 - [x] Cost estimates (input-token USD hint in summary) ✅
 - [x] Import graph analysis (local Python static imports) ✅
 - [x] `.ctxengignore` file support ✅
+- [x] `.gitignore` support (respected by default) ✅
+- [x] Secrets/PII redaction before output ✅
+- [x] Local JSONL tracing (what was included and why) ✅
+- [x] Chunk-level RAG (lexical fallback, embeddings optional) ✅
+- [x] Python AST skeleton mode ✅
+- [x] Context snapshots + CI subcommand ✅
+- [x] Few-shot examples injection ✅
 
 ---
 

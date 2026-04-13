@@ -167,7 +167,7 @@ def test_optimize_budget_sorts_by_relevance():
 def test_context_to_string_xml():
     from ctxeng.models import Context, ContextFile, TokenBudget
     ctx = Context(
-        files=[ContextFile(path=Path("foo.py"), content="x = 1", relevance_score=0.8, language="python")],
+        files=[ContextFile(path=Path("foo.py"), content="x = 1", relevance_score=0.8, language="python", redaction_count=0)],
         query="test query",
         budget=TokenBudget(total=1000),
     )
@@ -180,7 +180,7 @@ def test_context_to_string_xml():
 def test_context_to_string_markdown():
     from ctxeng.models import Context, ContextFile, TokenBudget
     ctx = Context(
-        files=[ContextFile(path=Path("bar.py"), content="y = 2", relevance_score=0.5, language="python")],
+        files=[ContextFile(path=Path("bar.py"), content="y = 2", relevance_score=0.5, language="python", redaction_count=0)],
         query="my task",
         budget=TokenBudget(total=1000),
     )
@@ -192,7 +192,7 @@ def test_context_to_string_markdown():
 def test_context_summary():
     from ctxeng.models import Context, ContextFile, TokenBudget
     ctx = Context(
-        files=[ContextFile(path=Path("a.py"), content="a", relevance_score=0.9, token_count=10)],
+        files=[ContextFile(path=Path("a.py"), content="a", relevance_score=0.9, token_count=10, redaction_count=0)],
         skipped_files=[ContextFile(path=Path("b.py"), content="b", relevance_score=0.1, token_count=5)],
         total_tokens=10,
         budget=TokenBudget(total=1000),
@@ -417,12 +417,14 @@ def test_engine_build_returns_context():
         (root / "auth.py").write_text("def authenticate(user, password): pass")
         (root / "models.py").write_text("class User: pass")
 
-        engine = ContextEngine(root=root, model="gpt-4o")
+        engine = ContextEngine(root=root, model="gpt-4o", trace=True)
         ctx = engine.build("Fix the authentication logic")
 
         assert len(ctx.files) > 0
         assert ctx.budget is not None
         assert ctx.total_tokens > 0
+        assert "trace_id" in ctx.metadata
+        assert "trace_path" in ctx.metadata
 
 
 def test_builder_fluent_api():

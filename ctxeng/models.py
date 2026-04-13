@@ -48,6 +48,7 @@ class ContextFile:
     inclusion_reason: str = ""
     language: str = ""
     is_truncated: bool = False
+    redaction_count: int = 0
 
     def __repr__(self) -> str:
         status = " [truncated]" if self.is_truncated else ""
@@ -81,6 +82,7 @@ class Context:
     skipped_files: list[ContextFile] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     cost_estimate: float | None = None
+    fewshot_examples: list[str] = field(default_factory=list)
 
     def to_string(self, fmt: str = "xml") -> str:
         """
@@ -110,6 +112,28 @@ class Context:
         if self.query:
             parts.append(f"<task>\n{self.query}\n</task>")
 
+        if self.fewshot_examples:
+            items = []
+            for i, ex in enumerate(self.fewshot_examples, start=1):
+                items.append(f"<example index=\"{i}\">\n{ex}\n</example>")
+            parts.append("<fewshot_examples>\n" + "\n\n".join(items) + "\n</fewshot_examples>")
+
+        # Index section improves navigation for large contexts.
+        if self.files:
+            index_lines = []
+            for f in self.files:
+                flags = []
+                if f.is_truncated:
+                    flags.append("truncated")
+                if getattr(f, "redaction_count", 0):
+                    flags.append(f"redactions={getattr(f, 'redaction_count', 0)}")
+                index_lines.append(
+                    f'  <item path="{f.path}" relevance="{f.relevance_score:.2f}" tokens="{f.token_count}"'
+                    + (f' flags="{",".join(flags)}"' if flags else "")
+                    + " />"
+                )
+            parts.append("<context_index>\n" + "\n".join(index_lines) + "\n</context_index>")
+
         for f in self.files:
             lang = f.language or ""
             truncated = ' truncated="true"' if f.is_truncated else ""
@@ -123,6 +147,27 @@ class Context:
         parts = []
         if self.query:
             parts.append(f"## Task\n{self.query}")
+        if self.metadata:
+            meta = "\n".join(f"- **{k}**: {v}" for k, v in self.metadata.items())
+            parts.append("## Metadata\n" + meta)
+
+        if self.fewshot_examples:
+            ex_parts = []
+            for i, ex in enumerate(self.fewshot_examples, start=1):
+                ex_parts.append(f"### Example {i}\n{ex}")
+            parts.append("## Few-shot examples\n" + "\n\n".join(ex_parts))
+
+        if self.files:
+            idx = []
+            for f in self.files:
+                flags = []
+                if f.is_truncated:
+                    flags.append("truncated")
+                if getattr(f, "redaction_count", 0):
+                    flags.append(f"redactions={getattr(f, 'redaction_count', 0)}")
+                flag_str = f" ({', '.join(flags)})" if flags else ""
+                idx.append(f"- `{f.path}` — score {f.relevance_score:.2f}, ~{f.token_count} tokens{flag_str}")
+            parts.append("## Included files\n" + "\n".join(idx))
         for f in self.files:
             lang = f.language or ""
             note = " *(truncated)*" if f.is_truncated else ""

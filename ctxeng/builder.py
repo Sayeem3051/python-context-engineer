@@ -44,6 +44,21 @@ class ContextBuilder:
         self._import_graph_depth = 1
         self._use_semantic = False
         self._semantic_model = "all-MiniLM-L6-v2"
+        self._respect_gitignore = True
+        self._allow_paths: list[str | Path] = []
+        self._deny_paths: list[str | Path] = []
+        self._trace = False
+        self._trace_dir: str | Path | None = None
+        self._trace_id: str | None = None
+        self._rag = False
+        self._rag_max_chunks = 20
+        self._rag_chunk_max_lines = 120
+        self._rag_chunk_overlap = 20
+        self._rag_embedding_model = "all-MiniLM-L6-v2"
+        self._skeleton = False
+        self._fewshot = False
+        self._fewshot_dir: str | Path = ".ctxeng/examples"
+        self._fewshot_max_files = 5
 
     def for_model(self, model: str) -> ContextBuilder:
         """Set the target model (determines token budget)."""
@@ -108,6 +123,63 @@ class ContextBuilder:
         self._semantic_model = model
         return self
 
+    def no_gitignore(self) -> ContextBuilder:
+        """Do not apply `.gitignore` rules when discovering files."""
+        self._respect_gitignore = False
+        return self
+
+    def allow(self, *paths: str | Path) -> ContextBuilder:
+        """Allowlist path prefixes; only these paths can be included."""
+        self._allow_paths.extend(paths)
+        return self
+
+    def deny(self, *paths: str | Path) -> ContextBuilder:
+        """Denylist path prefixes; these paths will never be included."""
+        self._deny_paths.extend(paths)
+        return self
+
+    def trace(self, enabled: bool = True, *, trace_dir: str | Path | None = None, trace_id: str | None = None) -> ContextBuilder:
+        """Enable local JSONL tracing for builds."""
+        self._trace = enabled
+        self._trace_dir = trace_dir
+        self._trace_id = trace_id
+        return self
+
+    def rag(
+        self,
+        enabled: bool = True,
+        *,
+        max_chunks: int = 20,
+        chunk_max_lines: int = 120,
+        chunk_overlap: int = 20,
+        embedding_model: str = "all-MiniLM-L6-v2",
+    ) -> ContextBuilder:
+        """Enable chunk-level retrieval (RAG)."""
+        self._rag = enabled
+        self._rag_max_chunks = max_chunks
+        self._rag_chunk_max_lines = chunk_max_lines
+        self._rag_chunk_overlap = chunk_overlap
+        self._rag_embedding_model = embedding_model
+        return self
+
+    def skeleton(self, enabled: bool = True) -> ContextBuilder:
+        """Enable AST skeleton output (Python) to reduce context size."""
+        self._skeleton = enabled
+        return self
+
+    def fewshot(
+        self,
+        enabled: bool = True,
+        *,
+        examples_dir: str | Path = ".ctxeng/examples",
+        max_files: int = 5,
+    ) -> ContextBuilder:
+        """Inject few-shot examples loaded from disk into the context."""
+        self._fewshot = enabled
+        self._fewshot_dir = examples_dir
+        self._fewshot_max_files = max_files
+        return self
+
     def build(self, query: str = "") -> Context:
         """
         Build and return the optimized Context.
@@ -141,4 +213,19 @@ class ContextBuilder:
             import_graph_depth=self._import_graph_depth,
             use_semantic=self._use_semantic,
             semantic_model=self._semantic_model,
+            respect_gitignore=self._respect_gitignore,
+            allow_paths=self._allow_paths,
+            deny_paths=self._deny_paths,
+            trace=self._trace,
+            trace_dir=self._trace_dir,
+            trace_id=self._trace_id,
+            rag=self._rag,
+            rag_max_chunks=self._rag_max_chunks,
+            rag_chunk_max_lines=self._rag_chunk_max_lines,
+            rag_chunk_overlap=self._rag_chunk_overlap,
+            rag_embedding_model=self._rag_embedding_model,
+            skeleton=self._skeleton,
+            fewshot=self._fewshot,
+            fewshot_dir=self._fewshot_dir,
+            fewshot_max_files=self._fewshot_max_files,
         )

@@ -464,7 +464,7 @@ def test_builder_propagates_advanced_flags(tmp_path: Path, monkeypatch: pytest.M
         .no_git()
         .use_import_graph(depth=2)
         .no_import_graph()
-        .use_semantic(model="all-mpnet-base-v2")
+        # Do not enable semantic scoring here; CI installs `.[dev]` (no sentence-transformers).
         .no_gitignore()
         .allow("a.py")
         .deny("nope")

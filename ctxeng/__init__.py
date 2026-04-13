@@ -12,7 +12,7 @@ from ctxeng.models import Context, ContextFile, TokenBudget
 from ctxeng.semantic import compute_semantic_scores
 from ctxeng.watcher import ContextWatcher, WatchConfig
 
-__version__ = "0.1.8"
+__version__ = "0.1.9"
 __all__ = [
     "ContextEngine",
     "ContextBuilder",

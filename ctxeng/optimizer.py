@@ -117,9 +117,14 @@ def _smart_truncate(f: ContextFile, max_tokens: int, model: str) -> ContextFile:
     sep_tokens = count_tokens(separator, model)
     tail_budget = max_tokens - head_tokens - sep_tokens
 
-    # Trim tail from the top if needed
+    # Trim tail from the top if needed (ensure progress even for short tails)
     while tail and count_tokens(tail, model) > tail_budget:
-        tail_lines = tail_lines[len(tail_lines) // 4 :]
+        if len(tail_lines) <= 1:
+            tail_lines = []
+            tail = ""
+            break
+        cut = max(1, len(tail_lines) // 4)
+        tail_lines = tail_lines[cut:]
         tail = "\n".join(tail_lines)
 
     truncated_content = head + separator + tail if tail else head + separator

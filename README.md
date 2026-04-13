@@ -199,6 +199,58 @@ patterns = parse_ctxengignore(Path("."))
 # → list of pattern strings, or [] if no file
 ```
 
+### Secrets & PII Redaction
+
+ctxeng automatically redacts common secrets and PII from file contents before sending to any LLM:
+
+- API keys and tokens
+- Passwords and credentials
+- Email addresses
+- Private keys
+
+Redaction happens before token counting, tracing, and output — your secrets never leave your machine.
+
+To disable:
+
+```bash
+ctxeng build "Your query" --no-redact
+```
+
+### RAG (Intelligent Chunk Retrieval)
+
+For large repositories, `--rag` switches from whole-file inclusion to **chunk-level retrieval**. ctxeng splits top-ranked files into overlapping chunks, then selects the most relevant chunks for your query:
+
+- Uses **embeddings** when `sentence-transformers` is installed
+- Falls back to **lexical retrieval** when embeddings aren’t available
+
+```bash
+ctxeng build "Explain the login flow" --rag
+```
+
+### AST Skeleton (Python)
+
+`--skeleton` replaces Python file bodies with an AST-derived outline (imports, classes, methods, function signatures). This is useful when you want a high-level overview within a tight token budget:
+
+```bash
+ctxeng build "Give me a high-level architecture overview" --skeleton
+```
+
+### Few-shot Examples
+
+You can inject a small “style guide” / best-practice library into the context with `--fewshot`. Put markdown/text files under `.ctxeng/examples/` and enable:
+
+```bash
+ctxeng build "Refactor this module" --fewshot
+```
+
+### CI subcommand
+
+Use `ctxeng ci` for pipeline-friendly context generation. It always writes to a file and is designed for non-interactive runs:
+
+```bash
+ctxeng ci "Generate release notes" --output context.md --fmt markdown --trace
+```
+
 ### Import graph (Python)
 
 After files are scored, **ctxeng** parses static ``import`` / ``from … import`` statements in each discovered ``.py`` file, resolves **relative imports** from the file’s location, and can **pull in imported modules** from the same collection set before the token budget is applied.

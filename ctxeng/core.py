@@ -69,6 +69,7 @@ class ContextEngine:
         rag_chunk_overlap: int = 20,
         rag_embedding_model: str = "all-MiniLM-L6-v2",
         skeleton: bool = False,
+        redact: bool = True,
         fewshot: bool = False,
         fewshot_dir: str | Path = ".ctxeng/examples",
         fewshot_max_files: int = 5,
@@ -98,6 +99,7 @@ class ContextEngine:
         self.rag_chunk_overlap = rag_chunk_overlap
         self.rag_embedding_model = rag_embedding_model
         self.skeleton = skeleton
+        self.redact = redact
         self.fewshot = fewshot
         self.fewshot_dir = fewshot_dir
         self.fewshot_max_files = fewshot_max_files
@@ -286,22 +288,25 @@ class ContextEngine:
             )
 
         # 4. Redact sensitive info before budgeting/output
-        redacted_files = 0
-        redacted_total = 0
-        for f in context_files:
-            r = redact_text(f.content, redact_secrets=True, redact_pii=True)
-            if r.total:
-                f.content = r.text
-                f.redaction_count = r.total
-                redacted_files += 1
-                redacted_total += r.total
+        if self.redact:
+            redacted_files = 0
+            redacted_total = 0
+            for f in context_files:
+                r = redact_text(f.content, redact_secrets=True, redact_pii=True)
+                if r.total:
+                    f.content = r.text
+                    f.redaction_count = r.total
+                    redacted_files += 1
+                    redacted_total += r.total
 
-        if trace_writer:
-            trace_writer.emit(
-                "redaction_summary",
-                files_with_redactions=redacted_files,
-                total_redactions=redacted_total,
-            )
+            if trace_writer:
+                trace_writer.emit(
+                    "redaction_summary",
+                    files_with_redactions=redacted_files,
+                    total_redactions=redacted_total,
+                )
+        elif trace_writer:
+            trace_writer.emit("redaction_summary", disabled=True)
 
         # 5. Optimize for token budget
         query_tokens = count_tokens(query, self.model) if query else 0

@@ -56,6 +56,7 @@ class ContextBuilder:
         self._rag_chunk_overlap = 20
         self._rag_embedding_model = "all-MiniLM-L6-v2"
         self._skeleton = False
+        self._redact = True
         self._fewshot = False
         self._fewshot_dir: str | Path = ".ctxeng/examples"
         self._fewshot_max_files = 5
@@ -167,6 +168,11 @@ class ContextBuilder:
         self._skeleton = enabled
         return self
 
+    def redact(self, enabled: bool = True) -> ContextBuilder:
+        """Enable/disable secrets & PII redaction before output."""
+        self._redact = enabled
+        return self
+
     def fewshot(
         self,
         enabled: bool = True,
@@ -225,6 +231,7 @@ class ContextBuilder:
             rag_chunk_overlap=self._rag_chunk_overlap,
             rag_embedding_model=self._rag_embedding_model,
             skeleton=self._skeleton,
+            redact=self._redact,
             fewshot=self._fewshot,
             fewshot_dir=self._fewshot_dir,
             fewshot_max_files=self._fewshot_max_files,

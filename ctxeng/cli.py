@@ -37,6 +37,8 @@ def _cmd_ci(args: argparse.Namespace) -> None:
         builder = builder.no_gitignore()
     if args.trace:
         builder = builder.trace(True, trace_dir=args.trace_dir, trace_id=args.trace_id)
+    if not args.redact:
+        builder = builder.redact(False)
     if args.rag:
         builder = builder.rag(
             True,
@@ -95,6 +97,8 @@ def cmd_build(args: argparse.Namespace) -> None:
         builder = builder.deny(*args.deny)
     if args.trace:
         builder = builder.trace(True, trace_dir=args.trace_dir, trace_id=args.trace_id)
+    if not args.redact:
+        builder = builder.redact(False)
     if args.rag:
         builder = builder.rag(
             True,
@@ -249,6 +253,8 @@ def cmd_watch(args: argparse.Namespace) -> None:
         builder = builder.use_semantic(model=args.semantic_model)
     if args.budget:
         builder = builder.with_budget(args.budget)
+    if not args.redact:
+        builder = builder.redact(False)
 
     query = " ".join(args.query) if args.query else ""
 
@@ -333,6 +339,12 @@ def main() -> None:
     build_p.add_argument(
         "--trace-id",
         help="Provide a custom trace id (default: random)",
+    )
+    build_p.add_argument(
+        "--redact",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Redact secrets and PII before output (default: on)",
     )
     build_p.add_argument(
         "--rag",
@@ -472,6 +484,12 @@ def main() -> None:
         help="Provide a custom trace id (default: random)",
     )
     watch_p.add_argument(
+        "--redact",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Redact secrets and PII before output (default: on)",
+    )
+    watch_p.add_argument(
         "--rag",
         action="store_true",
         help="Enable chunk-level retrieval (RAG) instead of whole-file inclusion",
@@ -576,6 +594,12 @@ def main() -> None:
     ci_p.add_argument("--trace", action="store_true", help="Write JSONL trace under .ctxeng/traces/")
     ci_p.add_argument("--trace-dir", help="Override trace output directory")
     ci_p.add_argument("--trace-id", help="Provide a custom trace id")
+    ci_p.add_argument(
+        "--redact",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Redact secrets and PII before output (default: on)",
+    )
     ci_p.add_argument("--rag", action="store_true", help="Enable chunk-level retrieval (RAG)")
     ci_p.add_argument("--rag-max-chunks", type=int, default=20)
     ci_p.add_argument("--rag-chunk-max-lines", type=int, default=120)

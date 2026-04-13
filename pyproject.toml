@@ -51,6 +51,12 @@ watch = ["watchdog>=3.0"]
 # Semantic similarity scoring
 semantic = ["sentence-transformers>=3.0"]
 
+# Multi-language AST symbol extraction (optional)
+ast = [
+    "tree-sitter>=0.22",
+    "tree-sitter-languages>=1.10",
+]
+
 # Install everything
 all = [
     "tiktoken>=0.7",
@@ -59,6 +65,8 @@ all = [
     "langchain-core>=0.2",
     "watchdog>=3.0",
     "sentence-transformers>=3.0",
+    "tree-sitter>=0.22",
+    "tree-sitter-languages>=1.10",
 ]
 
 # Dev / test
@@ -68,6 +76,8 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "tiktoken>=0.7",
+    "tree-sitter>=0.22",
+    "tree-sitter-languages>=1.10",
 ]
 
 [project.scripts]

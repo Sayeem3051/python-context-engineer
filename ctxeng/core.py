@@ -13,6 +13,7 @@ from ctxeng.optimizer import count_tokens, detect_language, optimize_budget
 from ctxeng.redaction import redact_text
 from ctxeng.retrieval import retrieve_chunks_embeddings, retrieve_chunks_lexical
 from ctxeng.scorer import rank_files
+from ctxeng.scoring_config import ScoringWeights, load_default_scoring_config, load_scoring_config
 from ctxeng.sources import collect_explicit, collect_filesystem, collect_git_changed
 from ctxeng.tracing import TraceConfig, TraceWriter
 
@@ -56,7 +57,7 @@ class ContextEngine:
         use_import_graph: bool = True,
         import_graph_depth: int = 1,
         use_semantic: bool = False,
-        semantic_model: str = "all-MiniLM-L6-v2",
+        semantic_model: str = "all-mpnet-base-v2",
         respect_gitignore: bool = True,
         allow_paths: list[str | Path] | None = None,
         deny_paths: list[str | Path] | None = None,
@@ -67,12 +68,14 @@ class ContextEngine:
         rag_max_chunks: int = 20,
         rag_chunk_max_lines: int = 120,
         rag_chunk_overlap: int = 20,
+        rag_chunk_context_lines: int = 3,
         rag_embedding_model: str = "all-MiniLM-L6-v2",
         skeleton: bool = False,
         redact: bool = True,
         fewshot: bool = False,
         fewshot_dir: str | Path = ".ctxeng/examples",
         fewshot_max_files: int = 5,
+        scoring_config: str | Path | None = None,
     ) -> None:
         self.root = Path(root).resolve()
         self.model = model
@@ -97,12 +100,18 @@ class ContextEngine:
         self.rag_max_chunks = rag_max_chunks
         self.rag_chunk_max_lines = rag_chunk_max_lines
         self.rag_chunk_overlap = rag_chunk_overlap
+        self.rag_chunk_context_lines = rag_chunk_context_lines
         self.rag_embedding_model = rag_embedding_model
         self.skeleton = skeleton
         self.redact = redact
         self.fewshot = fewshot
         self.fewshot_dir = fewshot_dir
         self.fewshot_max_files = fewshot_max_files
+        self.scoring_weights: ScoringWeights | None = None
+        if scoring_config:
+            self.scoring_weights = load_scoring_config(scoring_config)
+        else:
+            self.scoring_weights = load_default_scoring_config(self.root)
 
     def build(
         self,
@@ -193,6 +202,7 @@ class ContextEngine:
             self.root,
             use_semantic=self.use_semantic,
             semantic_model=self.semantic_model,
+            weights=self.scoring_weights,
         )
 
         if trace_writer:
@@ -217,6 +227,7 @@ class ContextEngine:
                     max_chunks=self.rag_max_chunks,
                     chunk_max_lines=self.rag_chunk_max_lines,
                     chunk_overlap=self.rag_chunk_overlap,
+                    chunk_context_lines=self.rag_chunk_context_lines,
                     model_name=self.rag_embedding_model,
                 )
                 method = "embedding"
@@ -227,6 +238,7 @@ class ContextEngine:
                     max_chunks=self.rag_max_chunks,
                     chunk_max_lines=self.rag_chunk_max_lines,
                     chunk_overlap=self.rag_chunk_overlap,
+                    chunk_context_lines=self.rag_chunk_context_lines,
                 )
                 method = "lexical"
 

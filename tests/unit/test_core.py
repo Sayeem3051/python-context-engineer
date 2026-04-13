@@ -114,6 +114,22 @@ def test_ast_score_invalid_python():
     assert score == 0.0
 
 
+def test_ast_score_javascript_basic():
+    from ctxeng.scorer import _ast_score_multilang
+
+    code = "function authenticateUser(token) { return token; }\nclass AuthService { login() {} }"
+    score = _ast_score_multilang(code, "authenticate user login", language="javascript")
+    assert score >= 0.0
+
+
+def test_ast_score_go_basic():
+    from ctxeng.scorer import _ast_score_multilang
+
+    code = "package main\n\nfunc AuthenticateUser(token string) string { return token }\n"
+    score = _ast_score_multilang(code, "authenticate user token", language="go")
+    assert score >= 0.0
+
+
 # ── Optimizer ─────────────────────────────────────────────────────────────────
 
 def test_optimize_budget_fits_all():
@@ -531,7 +547,7 @@ def test_rank_files_uses_semantic_when_enabled(monkeypatch: pytest.MonkeyPatch):
     ]
 
     def fake_semantic(_files, _query, model_name, root):  # noqa: ARG001
-        assert model_name == "all-MiniLM-L6-v2"
+        assert model_name == "all-mpnet-base-v2"
         return {Path("a.py"): 0.0, Path("b.py"): 1.0}
 
     monkeypatch.setattr(scorer, "compute_semantic_scores", fake_semantic)

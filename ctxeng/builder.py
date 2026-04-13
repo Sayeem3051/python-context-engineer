@@ -43,7 +43,7 @@ class ContextBuilder:
         self._use_import_graph = True
         self._import_graph_depth = 1
         self._use_semantic = False
-        self._semantic_model = "all-MiniLM-L6-v2"
+        self._semantic_model = "all-mpnet-base-v2"
         self._respect_gitignore = True
         self._allow_paths: list[str | Path] = []
         self._deny_paths: list[str | Path] = []
@@ -54,12 +54,14 @@ class ContextBuilder:
         self._rag_max_chunks = 20
         self._rag_chunk_max_lines = 120
         self._rag_chunk_overlap = 20
+        self._rag_chunk_context_lines = 3
         self._rag_embedding_model = "all-MiniLM-L6-v2"
         self._skeleton = False
         self._redact = True
         self._fewshot = False
         self._fewshot_dir: str | Path = ".ctxeng/examples"
         self._fewshot_max_files = 5
+        self._scoring_config: str | Path | None = None
 
     def for_model(self, model: str) -> ContextBuilder:
         """Set the target model (determines token budget)."""
@@ -118,7 +120,7 @@ class ContextBuilder:
         self._use_import_graph = False
         return self
 
-    def use_semantic(self, model: str = "all-MiniLM-L6-v2") -> ContextBuilder:
+    def use_semantic(self, model: str = "all-mpnet-base-v2") -> ContextBuilder:
         """Enable semantic similarity scoring (requires `sentence-transformers`)."""
         self._use_semantic = True
         self._semantic_model = model
@@ -153,6 +155,7 @@ class ContextBuilder:
         max_chunks: int = 20,
         chunk_max_lines: int = 120,
         chunk_overlap: int = 20,
+        chunk_context_lines: int = 3,
         embedding_model: str = "all-MiniLM-L6-v2",
     ) -> ContextBuilder:
         """Enable chunk-level retrieval (RAG)."""
@@ -160,6 +163,7 @@ class ContextBuilder:
         self._rag_max_chunks = max_chunks
         self._rag_chunk_max_lines = chunk_max_lines
         self._rag_chunk_overlap = chunk_overlap
+        self._rag_chunk_context_lines = chunk_context_lines
         self._rag_embedding_model = embedding_model
         return self
 
@@ -184,6 +188,11 @@ class ContextBuilder:
         self._fewshot = enabled
         self._fewshot_dir = examples_dir
         self._fewshot_max_files = max_files
+        return self
+
+    def scoring_config(self, path: str | Path) -> ContextBuilder:
+        """Load scoring weights from a config file."""
+        self._scoring_config = path
         return self
 
     def build(self, query: str = "") -> Context:
@@ -229,10 +238,12 @@ class ContextBuilder:
             rag_max_chunks=self._rag_max_chunks,
             rag_chunk_max_lines=self._rag_chunk_max_lines,
             rag_chunk_overlap=self._rag_chunk_overlap,
+            rag_chunk_context_lines=self._rag_chunk_context_lines,
             rag_embedding_model=self._rag_embedding_model,
             skeleton=self._skeleton,
             redact=self._redact,
             fewshot=self._fewshot,
             fewshot_dir=self._fewshot_dir,
             fewshot_max_files=self._fewshot_max_files,
+            scoring_config=self._scoring_config,
         )

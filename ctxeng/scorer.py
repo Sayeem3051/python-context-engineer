@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
 from pathlib import Path
 
+from ctxeng.multilang_ast import extract_symbols
+from ctxeng.scoring_config import ScoringWeights
 from ctxeng.semantic import compute_semantic_scores
 
 
@@ -16,7 +21,8 @@ def score_file(
     query: str,
     root: Path,
     *,
-    semantic_score: float = 0.0,
+    semantic_score: float | None = None,
+    weights: ScoringWeights | None = None,
 ) -> float:
     """
     Score how relevant a file is to the given query (0.0 – 1.0).
@@ -31,6 +37,7 @@ def score_file(
 
     Returns a float in [0, 1].
     """
+    w = (weights or ScoringWeights()).normalized_base()
     scores: list[float] = []
 
     scores.append(_keyword_score(content, query))
@@ -38,30 +45,36 @@ def score_file(
 
     if path.suffix == ".py":
         scores.append(_ast_score(content, query))
+    else:
+        lang = path.suffix.lower()
+        if lang in {".js", ".jsx"}:
+            scores.append(_ast_score_multilang(content, query, language="javascript"))
+        elif lang in {".ts", ".tsx"}:
+            scores.append(_ast_score_multilang(content, query, language="typescript"))
+        elif lang == ".go":
+            scores.append(_ast_score_multilang(content, query, language="go"))
 
     git_score = _git_recency_score(path, root)
     if git_score is not None:
         scores.append(git_score)
 
-    # Weighted average — keyword + AST matter most.
-    # If semantic scoring is available, it adds as a 5th signal at weight 0.3,
-    # and other weights are reduced proportionally (total remains 1.0).
-    weights = [0.4, 0.2, 0.25, 0.15]
-    while len(weights) > len(scores):
-        weights.pop()
+    # Weighted average — keyword/path/ast/git.
+    weights_list = [w.keyword, w.path, w.ast, w.git]
+    while len(weights_list) > len(scores):
+        weights_list.pop()
 
-    if semantic_score > 0.0:
-        semantic_w = 0.3
-        base_total = sum(weights) or 1.0
-        scaled = [(w / base_total) * (1.0 - semantic_w) for w in weights]
+    if semantic_score is not None:
+        semantic_w = max(0.0, float((weights or ScoringWeights()).semantic))
+        base_total = sum(weights_list) or 1.0
+        scaled = [(x / base_total) * (1.0 - semantic_w) for x in weights_list]
         return min(
             1.0,
             sum(s * w for s, w in zip(scores, scaled, strict=False)) + semantic_score * semantic_w,
         )
 
-    total_w = sum(weights) or 1.0
-    norm = [w / total_w for w in weights]
-    return min(1.0, sum(s * w for s, w in zip(scores, norm, strict=False)))
+    total_w = sum(weights_list) or 1.0
+    norm = [x / total_w for x in weights_list]
+    return min(1.0, sum(s * x for s, x in zip(scores, norm, strict=False)))
 
 
 def _keyword_score(content: str, query: str) -> float:
@@ -129,6 +142,26 @@ def _ast_score(content: str, query: str) -> float:
     return min(1.0, len(overlap) / max(1, len(query_tokens)))
 
 
+def _ast_score_multilang(content: str, query: str, *, language: str) -> float:
+    """
+    Extract symbols via optional tree-sitter and score overlap with query tokens.
+
+    If the optional dependency isn't installed, returns 0.0 so we fall back to
+    other signals (keyword/path/git/semantic).
+    """
+    if not query:
+        return 0.3
+
+    sym = extract_symbols(content, language=language).symbols
+    if not sym:
+        return 0.0
+
+    query_tokens = set(re.findall(r"\b\w{3,}\b", query.lower()))
+    overlap = query_tokens & sym
+    return min(1.0, len(overlap) / max(1, len(query_tokens)))
+
+
+@lru_cache(maxsize=4096)
 def _git_recency_score(path: Path, root: Path) -> float | None:
     """
     Score based on how recently this file was modified in git.
@@ -159,7 +192,8 @@ def rank_files(
     root: Path,
     *,
     use_semantic: bool = False,
-    semantic_model: str = "all-MiniLM-L6-v2",
+    semantic_model: str = "all-mpnet-base-v2",
+    weights: ScoringWeights | None = None,
 ) -> list[tuple[Path, str, float]]:
     """
     Score and rank a list of (path, content) tuples.
@@ -170,14 +204,16 @@ def rank_files(
     if use_semantic and files and query:
         semantic_scores = compute_semantic_scores(files, query, model_name=semantic_model, root=root)
 
-    scored = []
-    for path, content in files:
-        s = score_file(
-            path,
-            content,
-            query,
-            root,
-            semantic_score=semantic_scores.get(path, 0.0),
-        )
-        scored.append((path, content, s))
+    def _score_one(pc: tuple[Path, str]) -> tuple[Path, str, float]:
+        path, content = pc
+        sem = semantic_scores.get(path) if use_semantic else None
+        return path, content, score_file(path, content, query, root, semantic_score=sem, weights=weights)
+
+    # Parallelize scoring for large repos.
+    if len(files) >= 256:
+        max_workers = min(32, (os.cpu_count() or 4) + 4)
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            scored = list(ex.map(_score_one, files))
+    else:
+        scored = [_score_one(pc) for pc in files]
     return sorted(scored, key=lambda x: x[2], reverse=True)

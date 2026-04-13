@@ -45,19 +45,28 @@ def _cmd_ci(args: argparse.Namespace) -> None:
             max_chunks=args.rag_max_chunks,
             chunk_max_lines=args.rag_chunk_max_lines,
             chunk_overlap=args.rag_chunk_overlap,
+            chunk_context_lines=args.rag_chunk_context_lines,
             embedding_model=args.rag_embedding_model,
         )
     if args.skeleton:
         builder = builder.skeleton(True)
     if args.fewshot:
         builder = builder.fewshot(True, examples_dir=args.fewshot_dir, max_files=args.fewshot_max_files)
+    if args.scoring_config:
+        builder = builder.scoring_config(args.scoring_config)
     if args.budget:
         builder = builder.with_budget(args.budget)
     if args.git_diff:
         builder = builder.from_git_diff(args.git_base)
 
     query = " ".join(args.query) if args.query else ""
-    ctx = builder.build(query)
+    try:
+        ctx = builder.build(query)
+    except Exception as e:
+        if args.debug:
+            raise
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1) from e
     out_path = Path(args.output)
     out_path.write_text(ctx.to_string(args.fmt), encoding="utf-8")
     print(ctx.summary(show_cost=True), file=sys.stderr)
@@ -105,12 +114,15 @@ def cmd_build(args: argparse.Namespace) -> None:
             max_chunks=args.rag_max_chunks,
             chunk_max_lines=args.rag_chunk_max_lines,
             chunk_overlap=args.rag_chunk_overlap,
+            chunk_context_lines=args.rag_chunk_context_lines,
             embedding_model=args.rag_embedding_model,
         )
     if args.skeleton:
         builder = builder.skeleton(True)
     if args.fewshot:
         builder = builder.fewshot(True, examples_dir=args.fewshot_dir, max_files=args.fewshot_max_files)
+    if args.scoring_config:
+        builder = builder.scoring_config(args.scoring_config)
     if not args.import_graph:
         builder = builder.no_import_graph()
     else:
@@ -127,7 +139,13 @@ def cmd_build(args: argparse.Namespace) -> None:
     print(f"Model: {args.model}", file=sys.stderr)
     print("", file=sys.stderr)
 
-    ctx = builder.build(query)
+    try:
+        ctx = builder.build(query)
+    except Exception as e:
+        if args.debug:
+            raise
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1) from e
 
     print(ctx.summary(show_cost=args.show_cost), file=sys.stderr)
     print("", file=sys.stderr)
@@ -170,10 +188,12 @@ def cmd_build(args: argparse.Namespace) -> None:
 def cmd_info(args: argparse.Namespace) -> None:
     import subprocess
 
+    from ctxeng.import_graph import build_import_graph
     from ctxeng.optimizer import count_tokens, detect_language
     from ctxeng.sources import collect_filesystem
 
     root = Path(args.root).resolve()
+    fmt = getattr(args, "fmt", "plain")
     print(f"Project: {root}")
 
     # Git info
@@ -193,18 +213,71 @@ def cmd_info(args: argparse.Namespace) -> None:
     files = list(collect_filesystem(root))
     lang_counts: dict[str, int] = {}
     total_tokens = 0
-    for path, content in files:
-        lang = detect_language(path) or "other"
+    sizes: list[tuple[Path, int]] = []
+    for rel_path, content in files:
+        lang = detect_language(rel_path) or "other"
         lang_counts[lang] = lang_counts.get(lang, 0) + 1
         total_tokens += count_tokens(content)
+        try:
+            sizes.append((rel_path, (root / rel_path).stat().st_size))
+        except OSError:
+            sizes.append((rel_path, len(content.encode("utf-8", errors="replace"))))
 
     print(f"Files found: {len(files)}")
     print(f"Estimated total tokens: {total_tokens:,}")
+
+    # Language breakdown
     print()
-    print("By language:")
-    for lang, count in sorted(lang_counts.items(), key=lambda x: -x[1])[:10]:
-        bar = "█" * min(20, count)
-        print(f"  {lang:<15} {bar}  {count}")
+    if fmt == "markdown":
+        print("## Language breakdown")
+        print("```mermaid")
+        print("pie showData")
+        for lang, count in sorted(lang_counts.items(), key=lambda x: -x[1])[:15]:
+            print(f'  "{lang}" : {count}')
+        print("```")
+    else:
+        print("By language:")
+        for lang, count in sorted(lang_counts.items(), key=lambda x: -x[1])[:10]:
+            bar = "█" * min(20, count)
+            print(f"  {lang:<15} {bar}  {count}")
+
+    # Largest files
+    sizes.sort(key=lambda x: x[1], reverse=True)
+    print()
+    print("Top 10 largest files:")
+    for p, sz in sizes[:10]:
+        kb = sz / 1024
+        print(f"  {kb:8.1f} KB  {p.as_posix()}")
+
+    # Import graph stats (Python)
+    py_paths = [p for p, _c in files if p.suffix.lower() == ".py"]
+    if py_paths:
+        graph = build_import_graph(root, py_paths)
+        nodes = len(graph)
+        edges = sum(len(v) for v in graph.values())
+        density = edges / (nodes * (nodes - 1)) if nodes > 1 else 0.0
+
+        indeg: dict[str, int] = {k.as_posix(): 0 for k in graph}
+        outdeg: dict[str, int] = {k.as_posix(): len(v) for k, v in graph.items()}
+        for _src, targets in graph.items():
+            for t in targets:
+                indeg[t.as_posix()] = indeg.get(t.as_posix(), 0) + 1
+
+        coupled = sorted(
+            ((p, indeg.get(p, 0) + outdeg.get(p, 0), indeg.get(p, 0), outdeg.get(p, 0)) for p in outdeg),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+
+        print()
+        print("Python import graph:")
+        print(f"  Nodes:   {nodes}")
+        print(f"  Edges:   {edges}")
+        print(f"  Density: {density:.4f}")
+        print()
+        print("Highly coupled modules (top 10 by in+out degree):")
+        for p, total, i, o in coupled[:10]:
+            print(f"  {total:4d}  (in {i:3d}, out {o:3d})  {p}")
 
 
 def cmd_watch(args: argparse.Namespace) -> None:
@@ -241,6 +314,7 @@ def cmd_watch(args: argparse.Namespace) -> None:
             max_chunks=args.rag_max_chunks,
             chunk_max_lines=args.rag_chunk_max_lines,
             chunk_overlap=args.rag_chunk_overlap,
+            chunk_context_lines=args.rag_chunk_context_lines,
             embedding_model=args.rag_embedding_model,
         )
     if args.skeleton:
@@ -255,10 +329,18 @@ def cmd_watch(args: argparse.Namespace) -> None:
         builder = builder.with_budget(args.budget)
     if not args.redact:
         builder = builder.redact(False)
+    if args.scoring_config:
+        builder = builder.scoring_config(args.scoring_config)
 
     query = " ".join(args.query) if args.query else ""
 
-    engine = builder._build_engine()
+    try:
+        engine = builder._build_engine()
+    except Exception as e:
+        if args.debug:
+            raise
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1) from e
     watcher = ContextWatcher(
         query,
         engine=engine,
@@ -370,6 +452,12 @@ def main() -> None:
         help="Chunk overlap in lines for --rag (default: 20)",
     )
     build_p.add_argument(
+        "--rag-chunk-context-lines",
+        type=int,
+        default=3,
+        help="Lines of surrounding context included around each chunk (default: 3)",
+    )
+    build_p.add_argument(
         "--rag-embedding-model",
         default="all-MiniLM-L6-v2",
         help="Sentence-transformers model name for --rag embeddings (default: all-MiniLM-L6-v2)",
@@ -425,13 +513,29 @@ def main() -> None:
     )
     build_p.add_argument(
         "--semantic-model",
-        default="all-MiniLM-L6-v2",
-        help="Sentence-transformers model name (default: all-MiniLM-L6-v2)",
+        default="all-mpnet-base-v2",
+        help="Sentence-transformers model name (default: all-mpnet-base-v2)",
+    )
+    build_p.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print full error context (tracebacks) on failures",
+    )
+    build_p.add_argument(
+        "--scoring-config",
+        help="Path to scoring weights config JSON (default: <root>/.ctxeng/config.json if present)",
     )
     build_p.set_defaults(func=cmd_build)
 
     # --- info ---
     info_p = sub.add_parser("info", help="Show project info and file stats")
+    info_p.add_argument(
+        "--fmt",
+        "-f",
+        default="plain",
+        choices=["plain", "markdown"],
+        help="Output format (default: plain)",
+    )
     info_p.set_defaults(func=cmd_info)
 
     # --- watch ---
@@ -513,6 +617,12 @@ def main() -> None:
         help="Chunk overlap in lines for --rag (default: 20)",
     )
     watch_p.add_argument(
+        "--rag-chunk-context-lines",
+        type=int,
+        default=3,
+        help="Lines of surrounding context included around each chunk (default: 3)",
+    )
+    watch_p.add_argument(
         "--rag-embedding-model",
         default="all-MiniLM-L6-v2",
         help="Sentence-transformers model name for --rag embeddings (default: all-MiniLM-L6-v2)",
@@ -569,8 +679,17 @@ def main() -> None:
     )
     watch_p.add_argument(
         "--semantic-model",
-        default="all-MiniLM-L6-v2",
-        help="Sentence-transformers model name (default: all-MiniLM-L6-v2)",
+        default="all-mpnet-base-v2",
+        help="Sentence-transformers model name (default: all-mpnet-base-v2)",
+    )
+    watch_p.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print full error context (tracebacks) on failures",
+    )
+    watch_p.add_argument(
+        "--scoring-config",
+        help="Path to scoring weights config JSON (default: <root>/.ctxeng/config.json if present)",
     )
     watch_p.set_defaults(func=cmd_watch)
 
@@ -604,13 +723,16 @@ def main() -> None:
     ci_p.add_argument("--rag-max-chunks", type=int, default=20)
     ci_p.add_argument("--rag-chunk-max-lines", type=int, default=120)
     ci_p.add_argument("--rag-chunk-overlap", type=int, default=20)
-    ci_p.add_argument("--rag-embedding-model", default="all-MiniLM-L6-v2")
+    ci_p.add_argument("--rag-chunk-context-lines", type=int, default=3)
+    ci_p.add_argument("--rag-embedding-model", default="all-mpnet-base-v2")
     ci_p.add_argument("--skeleton", action="store_true", help="Use AST skeletons for Python files")
     ci_p.add_argument("--fewshot", action="store_true", help="Inject few-shot examples from disk")
     ci_p.add_argument("--fewshot-dir", default=".ctxeng/examples")
     ci_p.add_argument("--fewshot-max-files", type=int, default=5)
     ci_p.add_argument("--snapshot", action="store_true", help="Save snapshot under .ctxeng/snapshots/")
     ci_p.add_argument("--snapshot-id", help="Optional snapshot id")
+    ci_p.add_argument("--debug", action="store_true", help="Print full error context (tracebacks) on failures")
+    ci_p.add_argument("--scoring-config", help="Path to scoring weights config JSON")
     ci_p.set_defaults(func=_cmd_ci)
 
     args = parser.parse_args()

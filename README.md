@@ -8,6 +8,7 @@
 <p align="center">
   <a href="https://pypi.org/project/ctxeng/"><img src="https://img.shields.io/pypi/v/ctxeng?color=blue&label=pypi&cacheSeconds=3600" alt="PyPI"></a>
   <a href="https://github.com/sayeem3051/python-context-engineer/actions"><img src="https://github.com/sayeem3051/python-context-engineer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/Sayeem3051/python-context-engineer"><img src="https://codecov.io/gh/Sayeem3051/python-context-engineer/branch/main/graph/badge.svg" alt="Coverage"></a>
   <a href="https://pypi.org/project/ctxeng/"><img src="https://img.shields.io/pypi/pyversions/ctxeng?cacheSeconds=3600" alt="Python"></a>
   <img src="https://img.shields.io/github/license/sayeem3051/python-context-engineer?cacheSeconds=3600" alt="License">
   <a href="https://pepy.tech/project/ctxeng"><img src="https://static.pepy.tech/badge/ctxeng/month" alt="Downloads"></a>
@@ -28,6 +29,11 @@ The quality of your LLM's output depends almost entirely on *what you put in the
 - **Ranks by signal** — keyword overlap, AST symbols, git recency, import graph
 - **Fits the budget** — smart truncation keeps the best parts within any model's token limit
 - **Ships ready to paste** — XML, Markdown, or plain text output that works with Claude, GPT-4o, Gemini, and every other model
+
+Docs:
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md)
+- [`docs/FAQ.md`](docs/FAQ.md)
 
 One small dependency ([pathspec](https://pypi.org/project/pathspec/)) powers ``.ctxengignore`` (gitignore-style patterns). Works with any LLM.
 
@@ -58,6 +64,8 @@ For semantic similarity scoring (optional local embeddings):
 ```bash
 pip install "ctxeng[semantic]"
 ```
+
+Default semantic model is `all-mpnet-base-v2`. Override with `--semantic-model` when building context.
 
 For one-line LLM calls:
 
@@ -222,6 +230,7 @@ For large repositories, `--rag` switches from whole-file inclusion to **chunk-le
 
 - Uses **embeddings** when `sentence-transformers` is installed
 - Falls back to **lexical retrieval** when embeddings aren’t available
+- Chunks Python files by **function/class** boundaries when possible
 
 ```bash
 ctxeng build "Explain the login flow" --rag
@@ -514,7 +523,7 @@ build options:
   --show-cost / --no-show-cost
                   Include estimated input cost in stderr summary (default: on)
   --semantic       Enable semantic similarity scoring (requires sentence-transformers)
-  --semantic-model Semantic model name (default: all-MiniLM-L6-v2)
+  --semantic-model Semantic model name (default: all-mpnet-base-v2)
   --gitignore / --no-gitignore
                   Respect .gitignore in addition to .ctxengignore (default: on)
   --allow          Allowlist path prefixes; only these paths may be included
@@ -541,7 +550,7 @@ build options:
 watch options:
   --interval S    Polling interval in seconds (default: 1.0)
   --semantic       Enable semantic similarity scoring (requires sentence-transformers)
-  --semantic-model Semantic model name (default: all-MiniLM-L6-v2)
+  --semantic-model Semantic model name (default: all-mpnet-base-v2)
   --gitignore / --no-gitignore
                   Respect .gitignore in addition to .ctxengignore (default: on)
   --allow          Allowlist path prefixes; only these paths may be included
@@ -647,6 +656,18 @@ You could. But you'll hit these problems immediately:
 ## Contributing
 
 PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Test coverage
+
+We track coverage with `pytest-cov` in CI and upload `coverage.xml` to Codecov.
+
+- **Goal**: keep coverage **above 80%**
+- **Local run**:
+
+```bash
+pip install -e ".[dev]"
+pytest --cov=ctxeng --cov-report=term-missing --cov-report=xml
+```
 
 ```bash
 git clone https://github.com/sayeem3051/python-context-engineer

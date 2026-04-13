@@ -8,7 +8,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from ctxeng.chunking import Chunk, chunk_text
+from ctxeng.chunking import Chunk, chunk_file
 
 
 def _tokens(text: str) -> list[str]:
@@ -30,6 +30,7 @@ def retrieve_chunks_lexical(
     max_chunks: int = 20,
     chunk_max_lines: int = 120,
     chunk_overlap: int = 20,
+    chunk_context_lines: int = 3,
 ) -> list[RetrievedChunk]:
     """
     Lexical retrieval over chunks using a lightweight BM25-ish score.
@@ -48,7 +49,13 @@ def retrieve_chunks_lexical(
     df: Counter[str] = Counter()
 
     for path, content in files:
-        for ch in chunk_text(path, content, max_lines=chunk_max_lines, overlap=chunk_overlap):
+        for ch in chunk_file(
+            path,
+            content,
+            max_lines=chunk_max_lines,
+            overlap=chunk_overlap,
+            context_lines=chunk_context_lines,
+        ):
             toks = _tokens(ch.text)
             if not toks:
                 continue
@@ -95,7 +102,8 @@ def retrieve_chunks_embeddings(
     max_chunks: int = 20,
     chunk_max_lines: int = 120,
     chunk_overlap: int = 20,
-    model_name: str = "all-MiniLM-L6-v2",
+    chunk_context_lines: int = 3,
+    model_name: str = "all-mpnet-base-v2",
 ) -> list[RetrievedChunk]:
     """
     Embedding-based retrieval over chunks.
@@ -112,7 +120,15 @@ def retrieve_chunks_embeddings(
 
     chunks: list[Chunk] = []
     for path, content in files:
-        chunks.extend(chunk_text(path, content, max_lines=chunk_max_lines, overlap=chunk_overlap))
+        chunks.extend(
+            chunk_file(
+                path,
+                content,
+                max_lines=chunk_max_lines,
+                overlap=chunk_overlap,
+                context_lines=chunk_context_lines,
+            )
+        )
     if not chunks:
         return []
 

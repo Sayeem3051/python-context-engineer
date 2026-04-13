@@ -37,7 +37,7 @@ def _cosine(a: list[float], b: list[float]) -> float:
 def compute_semantic_scores(
     files: list[tuple[Path, str]],
     query: str,
-    model_name: str = "all-MiniLM-L6-v2",
+    model_name: str = "all-mpnet-base-v2",
     *,
     root: Path | None = None,
 ) -> dict[Path, float]:

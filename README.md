@@ -52,11 +52,11 @@ If you want the shortest summary: **Cursor/Copilot help you ask; ctxeng helps yo
 
 ```mermaid
 flowchart LR
-  U[You / task] --> C[ctxeng]
-  R[(Your repo)] --> C
-  C --> O[LLM-ready context (XML, Markdown, plain)]
-  O --> A[LLM (ChatGPT/Claude/Gemini/API)]
-  A --> B[Better answers, less hallucination]
+  U["You and your task"] --> C["ctxeng"]
+  R["Your repo"] --> C
+  C --> O["LLM ready context"]
+  O --> A["LLM"]
+  A --> B["Better answers"]
 ```
 
 Docs:

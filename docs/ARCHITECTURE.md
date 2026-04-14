@@ -4,33 +4,9 @@
 
 ```mermaid
 flowchart TD
-  subgraph Inputs
-    Q[Task / query]
-    R[(Repository root)]
-    O[Options / flags]
-  end
-
-  subgraph Pipeline
-    D[Discover files]
-    S[Score + rank]
-    IG[Import-graph expansion (optional)]
-    RAG[RAG chunk retrieval (optional)]
-    SK[AST skeleton (optional)]
-    RX[Redact secrets + PII (optional, default on)]
-    B[Fit token budget]
-    RND[Render output (XML, Markdown, plain)]
-  end
-
-  Q --> S
-  R --> D --> S --> IG --> RAG --> SK --> RX --> B --> RND
-  O --> D
-  O --> S
-  O --> IG
-  O --> RAG
-  O --> SK
-  O --> RX
-  O --> B
-  RND --> OUT[Context output + metadata]
+  Q["Task query"] --> S["Score and rank"]
+  R["Repo root"] --> D["Discover files"] --> S --> IG["Import graph optional"] --> RAG["RAG optional"] --> SK["Skeleton optional"] --> RX["Redact optional"] --> B["Fit token budget"] --> RND["Render output"]
+  RND --> OUT["Context output"]
 ```
 
 ## Key design goals

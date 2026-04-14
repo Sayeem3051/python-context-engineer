@@ -30,6 +30,35 @@ The quality of your LLM's output depends almost entirely on *what you put in the
 - **Fits the budget** — smart truncation keeps the best parts within any model's token limit
 - **Ships ready to paste** — XML, Markdown, or plain text output that works with Claude, GPT-4o, Gemini, and every other model
 
+---
+
+## Why ctxeng vs Cursor / Copilot?
+
+Cursor and Copilot are great for **in-editor assistance**. `ctxeng` is different: it’s a **local-first context builder** that creates a *portable*, *reproducible* context bundle you can use with **any** LLM (chat UI, API, CI).
+
+What you get with `ctxeng` that “just ask the editor” usually doesn’t solve well:
+
+- **Deterministic context selection**: explicit scoring + ranking signals (keyword, AST, git recency, import graph, optional semantic).
+- **Token-budget guarantee**: builds a context that *fits* your model window via budgeting + smart truncation.
+- **Safety by default**: secrets/PII redaction happens before token counting, tracing, or output.
+- **RAG for big repos**: chunk-level retrieval (embeddings optional, lexical fallback).
+- **Operational workflows**: tracing + snapshots + `ctxeng ci` for pipeline runs and reproducible artifacts.
+
+If you want the shortest summary: **Cursor/Copilot help you ask; ctxeng helps you package the right evidence reliably.**
+
+---
+
+## Visual: what ctxeng does
+
+```mermaid
+flowchart LR
+  U[You / task] --> C[ctxeng]
+  R[(Your repo)] --> C
+  C --> O[LLM-ready context\n(XML/Markdown/plain)]
+  O --> A[LLM (ChatGPT/Claude/Gemini/API)]
+  A --> B[Better answers\nless hallucination]
+```
+
 Docs:
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md)
@@ -78,6 +107,15 @@ pip install "ctxeng[all]"          # everything
 ---
 
 ## Quickstart
+
+### Start in 30 seconds
+
+```bash
+pip install ctxeng
+ctxeng build "Fix the auth bug" --git-diff --fmt markdown --output ctx.md
+```
+
+Open `ctx.md` and paste it into your LLM.
 
 ### Python API
 
@@ -150,6 +188,32 @@ ctxeng build "Explain the payment flow" --output context.md
 
 # Project stats
 ctxeng info
+```
+
+---
+
+## Real-world impact (Before vs After)
+
+**Without ctxeng** (typical outcome when you paste a few files / vague snippets):
+
+- Misses the real failing module
+- Suggests changes that don’t match your codebase
+- Spends tokens asking for more files
+
+**With ctxeng** (same question, but with an evidence-packed context):
+
+- Gets the right files (ranked) on the first try
+- Uses imports + git recency to pull relevant neighbors
+- Fits your model window automatically and stays reproducible (trace/snapshot)
+
+Example prompt:
+
+> “Why is `test_login` failing after my last commit? Provide a minimal fix.”
+
+Example command:
+
+```bash
+ctxeng build "Why is test_login failing after my last commit? Provide a minimal fix." --git-diff --trace --fmt markdown --output ctx.md
 ```
 
 ### Watch mode

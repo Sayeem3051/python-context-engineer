@@ -18,7 +18,7 @@ flowchart TD
     SK[AST skeleton (optional)]
     RX[Redact secrets + PII (optional, default on)]
     B[Fit token budget]
-    RND[Render output (XML / Markdown / plain)]
+    RND[Render output<br/>(XML / Markdown / plain)]
   end
 
   Q --> S

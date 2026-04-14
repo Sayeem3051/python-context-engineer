@@ -54,9 +54,9 @@ If you want the shortest summary: **Cursor/Copilot help you ask; ctxeng helps yo
 flowchart LR
   U[You / task] --> C[ctxeng]
   R[(Your repo)] --> C
-  C --> O[LLM-ready context\n(XML/Markdown/plain)]
+  C --> O[LLM-ready context<br/>(XML / Markdown / plain)]
   O --> A[LLM (ChatGPT/Claude/Gemini/API)]
-  A --> B[Better answers\nless hallucination]
+  A --> B[Better answers<br/>less hallucination]
 ```
 
 Docs:
